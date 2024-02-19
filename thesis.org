@@ -1,0 +1,625 @@
+#+OPTIONS: toc:nil
+#+SETUPFILE: setup.org
+#+TITLE: Quantity over Quality: Introducing Fishsense Lite, a Inaccurate Length Measurement Tool for Citizen Science
+#+AUTHOR: Kyle Sirong Hu
+#+LATEX_HEADER: \degree{Intelligent Systems, Robotics and Control}{M.S}
+#+LATEX_HEADER: \degreeyear{2024}
+#+LATEX_HEADER: \chair{Professor Curt Schurgers}
+#+LATEX_HEADER: \cochair{Professor Ryan Kastner}
+#+LATEX_HEADER: \committee{Professor Nikolay Atanasov}
+
+* Frontmatter :ignore:
+#+LATEX: \makecopyright
+#+LATEX: \makesignature
+
+#+BEGIN_dedication
+
+#+END_dedication
+
+#+BEGIN_epigraph
+#+ATTR_LATEX: :latexcode \vskip0.5pt plus.5fil \setsinglespacing
+#+BEGIN_VERSE
+One fish, Two fish, Red fish, Blue fish,
+Black fish, Blue fish, Old fish, New fish.
+This one has a little car.
+This one has a little star.
+Say! What a lot of fish there are.
+#+END_VERSE
+#+ATTR_LATEX: :latexcode \vskip\baselineskip
+/Dr. Seuss/
+#+END_epigraph
+
+#+LATEX: \tableofcontents
+
+#+BEGIN_acknowledgements
+This project would not have been possible without the many hands available to
+help us throughout these past couple of years.
+
+Thank you to the members of my committee: Curt Schurgers, for his invaluable
+guidance on writing this document, Ryan Kastner, for guiding us through the
+bureaucracies of research funding, and Nikolay Atanasov, for helping me smooth
+out some of the math-heavy portions of this document.
+
+Thank you to Christopher Crutchfield, who has dealt with far more logistical
+and managerial issues than a PhD student should ever have to deal with. Thank
+you to Nathan Hui, whose stern engineering and management advice was vital to us
+making it this far. Thank you to all undergraduates who have worked with the
+Fishsense project: Vivaswat Suresh, Raghav Maddukuri, Avik Ghosh, Allen Kan, Ana
+Perez, Hamish Grant, Harish Vasanth, Shaurya Raswan, Kyle Tran, Sam Prestrelski,
+and Jennifer Xu. Thank you also to the REU students who helped us gather
+valuable data despite unreasonably short notice: Josie Dominguez, Jordan
+Reichhart, Ela Lucas, and Nick Reyes.
+
+Thank you to Professor Brice Semmens, Jack Elstner, Alli Candelmo, Jen Loch and
+the members of REEF for testing this system and providing us with the initial
+problem we aim to solve. An additional thank you to Patrick Paxson and Peter
+Tueller, whose work laid the foundation for our current research.
+
+Most importantly, thank you to Fred the fake fish, who we dearly miss. May he enjoy his freedom in
+the Pacific Ocean.
+
+I would also like to thank the people I've met during my time at UCSD, who have
+made this journey worth it.
+
+Thank you to Kristina ``Kat'' Diep, for always being encouraging and supportive
+during my time in graduate school. Your humor and light-heartedness has kept me
+going.
+
+Thank you to Matei Gardus, who taught me how to use emacs org-mode several years
+ago, and is what this document is written with.
+
+Thank you to the members of UCSD Quizbowl, in particular to Alistair Gray, who
+is a dear friend, and to Praveen Nair, who had me include the Dr. Seuss quote in
+the epigraph.
+
+Thank you the "ibob" crew,
+
+Thank you to Daniel Truong, as well as both the San Diego Smash and Fighting
+Game communities, for allowing me to grow emotionally that much more.
+
+Finally, thank you to my parents, whose continuous support has allowed the
+opportunity to do all of this.
+
+#+END_acknowledgements
+
+* Abstract :ignore:
+#+BEGIN_dissertationabstract
+Fish length is a crucial metric to evaluate the health of fish populations.
+Current methods most commonly rely on roving diver surveys, where divers
+manually measure length via visual approximation. Doing so requires frequent
+re-training and is prone to a percentage length error of around 20%. This paper
+proposes a novel system made of components that many divers already possess,
+including a waterproof camera and laser pointer. To this, we add a custom mount,
+along with post-processing software to extract length data from captured images.
+The system provides less error (<15%) than human-made length measurements, and
+allows recreational divers to act as citizen scientists and gather vital fish
+length data with minimal required training.
+#+END_dissertationabstract
+** Annotation                                                      :noexport:
+Verify the requirements for including material from your own paper
+* Introduction 
+Marine ecosystems provide humankind many resources which we depend on.
+Phytoplankton account for 70% of all photosynthesis on Earth, and marine
+agriculture is an important source of food worldwide. Data that can be used to
+evaluate the health of our oceans is therefore essential for us to understand
+the potential impact of climate change. Currently, however, methods of getting
+data only a global scale are low-resolution.
+
+This work examines one particular metric of interest: fish length. In context of
+the typical length of a species and the typical length within a population, fish
+length serves as a useful quantitative metric for determining the overall health
+of a fish population. Studies of fish length have also been used to quantify the
+impact of specific fishing policies \nbsp\cite{Heppell2012}.
+
+Current global fish length data typically comes from catch and release programs.
+In California, the California Collaborative Fisheries Research Program (CCFRP)
+is one such program. However, these expeditions incur a lot of overhead for
+relatively little gain, may be dangerous for the anglers\nbsp\cite{Rohner2011}, and
+also the fish being studied\nbsp\cite{Ramsay2009}. Thus a low effort, non-invasive
+approach is desirable.
+
+Roving diver surveys, where a team of divers conducts a visual census of fish
+species and their lengths, are one such approach, though humans are only capable
+of estimating to within 20% of a fish's true length \cite{}. This skill also
+requires retraining as frequent as once every 6 months \cite{}.
+
+This work presents one potential solution - a device that can be used by any
+recreational diver made from off-the-shelf components, that produces estimations
+more accurately than a human being can. Dubbed Fishsense Lite, this device
+incorporates laser triangulation techniques to allow divers to take images of a
+fish and use them to estimate fish length.
+
+** Problem Specification
+This work will target the Fishsense Lite - the device that consists of the laser
+triangulation technique as well as the software to process images taken by the
+physical device. This is presented as a solution to object measurement. The
+implications of the accuracy bounds of this type of solution will be detailed in
+a later section.
+
+The length measurement algorithm makes the following assumptions about the object of interest:
+1. The object is planar.
+2. The object is parallel with the image plane.
+3. The laser dot is visible and lies in the same plane as the object.
+
+Our desired accuracy goal with this system is only within 20% of the true fish
+length - for this type of data, quantity is desired over quality, especially if
+the error is consistent, as methods exist to compensate for those types of
+errors. In addition, the current primary method of collecting these data is to
+visually estimate the length of a fish, which humans are capable of doing to
+within 20% of true length, but requires retraining as frequent as once every 6
+months.
+
+In situations where higher accuracy is required, such as construction\nbsp\cite{},
+this particular device may not be ideal, as the accuracy requirements are much
+more strict.
+
+** Related Work
+I consulted works in several different domains during the construction of this
+project. These domains will be detailed in this section.
+*** Underwater Ranging
+#+ATTR_LATEX: :float multicolumn :mode math :align |c||c|c|c|c| :width 70%
+#+CAPTION: Comparison of different underwater ranging techniques.
+#+LABEL: tab:comparison
+|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+| Technique                  | Minimum Estimated Cost (USD) | Accuracy (relative error)           | Ease of Use  | Range                      |
+|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+| Stereo Video               | \$4600\nbsp\cite{SeaGIS}         | $2.5\%$\nbsp\cite{Harvey2001}           | Intermediate | $2-10m$\nbsp\cite{Mallet2014}  |
+|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+| Laser Caliper              | \$600\nbsp\cite{BERGERON2007}    | $12\%$\nbsp\cite{Stock2021}             | Intermediate | $2-5m$\nbsp\cite{Stock2021}    |
+|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+| Acoustic Methods           | \$20k\nbsp\cite{Mueller2006}     | $1.1\% - 35.2\%$\nbsp\cite{Mueller2006} | Hard         | $1-16m$\nbsp\cite{Mueller2006} |
+|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+| Triangulation Rangefinding | \$1200                       | $15\%$                              | Easy         | $2-5m$                     |
+|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+
+A standard method for collecting fish length measurements uses stereo video
+technology\nbsp\cite{Mallet2014}. To measure the actual size of objects in an image,
+an additional camera can be added to create a stereo camera setup - provided the
+relationship between the two cameras is known, apparent size can be converted to
+actual size by determining the distance of the fish from the cameras. These are
+typically diver-operated (known as stereo diver-operated video or
+stereo-DOV)\nbsp\cite{Goetze2019} or placed in baited remote underwater video
+systems\nbsp\cite{Mallet2014}. While stereo-DOV is a more cost-effective solution
+than deploying a remote system, the current state of the art still requires
+purchasing proprietary hardware and software\nbsp\cite{Goetze2019}, which can be
+prohibitively expensive for a citizen scientist at a minimum of
+$4,600USD\nbsp\cite{SeaGIS} for a scientist grade stereo video system. In addition,
+stereo video generates a large amount of data that requires significant effort
+to store and process\nbsp\cite{Tueller2021}.
+
+Commercial stereo video solutions include the AQ1 AM100\nbsp\cite{Shafait2017} and
+the AKVA Vicass HD\nbsp\cite{Churnside2012}, typically used in aquaculture. Such
+systems are also costly and require a tether to a surface-side computer with
+proprietary software that must be used to manage the system. This limits the
+regions of the world where the data can be collected as it requires scientists
+to interact with the system. The tether also limits the depths at which the data
+can be collected.
+
+Another solution for ranging uses laser calipers -- two parallel lasers placed a
+known distance away from each other. When calibrated correctly, the distance
+between the two laser dots can be used as a reference length to measure the
+entire fish\nbsp\cite{Rohner2011, Heppell2012}. For these measurements to be
+accurate, both lasers must be perfectly parallel with each other and the camera
+axis. Depending on manufacturing tolerances, such a requirement may mean that
+lasers must be carefully selected. Typically, this system is calibrated by
+measuring the distance between the two laser dots at a large distance before a
+dive\nbsp\cite{Heppell2012}. Lengths are then calculated using the known distance
+between two points and the projection of the fish onto the camera. While length
+estimation becomes simple using this method, the cost of two lasers and time for
+the minute readjustments waste valuable resources for researchers. The dual
+laser mechanism also requires that the object is larger than the distance of the
+two lasers, meaning fish smaller than the offset cannot be measured.
+
+Our system uses only a single laser to measure distance, which removes the need
+to calibrate two lasers simultaneously and keep them in parallel. This technique
+is similar to a light projection-based triangulation rangefinder
+system\nbsp\cite{Parthasarathy1982}, as it uses spatial information about the laser
+dot to determine the depth of the subject. This method can be extremely accurate
+with the right combination of laser and image sensor - up to 10
+micrometers\nbsp\cite{Ebrahim2015, Cavedo2016}. Such sensors have been experimented
+with as a low-cost solution for robot localization\nbsp\cite{Nguyen1995}, quality
+assurance in manufacturing\nbsp\cite{Cavedo2016}, and 3D scanning\nbsp\cite{Baba2001}.
+
+Single laser range finding also has precedence for use in animal size
+studies\nbsp\cite{Jaquet2006, Monkman2019,Breuer2007}. The primary benefit of this
+approach is that it is more inexpensive than other solutions and requires less
+training to operate\nbsp\cite{Monkman2019}. Jaquet and Breuer et al. utilize a range
+finder as a separate module from a regular digital camera\nbsp\cite{Jaquet2006, Breuer2007}.
+Data from both modules must be combined and processed manually to obtain lengths\nbsp\cite{Jaquet2006, Monkman2019}.
+
+A summary of these underwater ranging methods can be seen in
+Table\nbsp\ref{tab:comparison}, including Fishsense Lite.
+
+*** Underwater Imaging
+
+*** Planar Object Registration
+
+* System Description 
+The current Fishsense Lite system has two main components: the physical image
+taking device combined with a laser pointer, and software that processes the
+images from the device.
+** Usage Guide
+Prior to deploying this device in the field, calibration procedures must be
+performed to maximize the accuracy of the obtained measurements.
+*** Offline Procedures
+**** Camera Calibration
+The internal parameters of the camera must be calibrated in water. This is
+currently achieved using Zhang's method \nbsp\cite{Zhang2000}, and is performed in a
+swimming pool.
+
+**** Laser Calibration
+The precise position and orientation of the laser beam must also be estimated.
+Currently we do this by using a flat object with known features -- a dive slate
+with duct tape on it, in our case. Multiple images of this flat object must be
+taken with the laser dot on it in order to estimate the laser beam's parameters.
+
+*** Online Procedures
+When in use, the diver points the laser pointer towards a fish and takes a
+picture. The laser dot is generally in parallel with the camera, so it acts a
+guide for the diver to ensure the image will meet our requirements, even in
+cases where the viewfinder is too dim to see the image being taken.
+*** Post Processing
+After a dive or a series of dives, the diver can then upload the data to an
+automated software pipeline that calculates the fish length.
+* Implementation Details
+** Annotations :noexport:
+Acknowledge the Mobisys paper when it gets published
+** Hardware
+The device used to take the fish images must fit the following assumptions:
+1. The system must have an imager that images can be extracted from.
+2. The imager must be able to be modeled using the pinhole camera model.
+3. The laser beam must be mounted rigidly to the imager.
+4. The laser dot must be visible within the image for all desired ranges.
+
+Our fully assembled Fishsense Lite unit is shown in Figure\nbsp\ref{fig:fsl}.
+
+#+ATTR_LATEX: :scale 0.2  :options angle=-90
+#+ATTR_ORG: :width 200px
+#+CAPTION: A fully assembled Fishsense Lite unit.
+#+label: fig:fsl
+[[file:images/fishsense-lite-system.jpg]]
+
+*** Camera
+For our own testing, we use an Olympus TG6, a common camera for divers to own
+for underwater photography.
+**** Wide Angle Lens
+
+**** Annotations                                                   :noexport:
+resolution requirements
+rectified image assumption
+*** Laser Mount
+In order to secure the 
+**** Annotations :noexport:
+Ask Adrian if it's ok to include his work here.
+*** Laser Pointer
+So far we have experimented with two main laser pointer models: the ?? and the
+??. Both lasers are rated for less than 5mW of power. The former model emits
+light at 700nm, and the latter at 532nm.
+
+During testing, we discovered two significant factors that influenced our
+decision to used one over the other.
+
+The first is attenuation - within the visible spectrum, water attenuates light
+with longer wavelengths significantly more than shorter wavelengths, and so red
+light is more difficult to see at greater distances\nbsp\cite{}. From our testing,
+we found that the red laser became incredibly difficult to spot at around 5m.
+
+The second is fish behavior - from tests with real fish, divers have observed
+that fish tend to avoid the green laser. Our main hypothesis for why this occurs
+is that fish are able to see green light far better than red.
+*** Existing Physical Devices
+We currently have seven Fishsense Lite camera units, codenamed FSL-01 through
+FSL-07. These are all comprised of exactly the same hardware components listed
+above.
+** Software
+In order to obtain length measurements from the captured images, we use a custom
+software pipeline to extract the necessary features to measure length. Algorithm
+\ref{alg:pipeline} shows a summary of the pipeline.
+
+This algorithm is currently written in Python and run manually, though in future
+we plan to move this to a Rust codebase.
+
+\begin{algorithm}
+\caption{Image processing pipeline.}
+\label{alg:pipeline}
+\begin{algorithmic}
+\Require Image $I$, camera matrix $K$, laser parameters $\alpha$ and $\ell$
+\State $I_R \gets \text{rectify}(I, K)$
+\If{$\text{not laserInImage}(I_R)$} \\
+    \COMMENT{Reject image.}
+\EndIf
+\State $_{}P_{\text{laser} }\gets \text{getLaserDot}(I_R)$
+\If{$\text{not fishInImage}(I_R)$} \\
+    \COMMENT{Reject image.}
+\EndIf
+\State $P_{\text{head}},P_{\text{tail}} \gets \text{getHeadTail}(I_R)$
+\State $L \gets \text{getFishLength}(I_R, P_{\text{head}}, P_{\text{tail}}, P_{\text{laser}})$ \\
+\Return $L$
+\end{algorithmic}
+\end{algorithm}
+*** Image Rectification
+All calculations relating to image projection rely on pinhole camera model
+assumptions. 
+*** Raw Processing
+**** Annotations :noexport:
+Ask Hamish about whether it's ok to include his work in here and credit him
+*** Field Calibration
+
+*** Automatic Laser Detection
+**** Annotations :noexport:
+Ask Viva for permission to include his work in here and make sure to credit him
+*** Fish Segmentation
+**** Annotations :noexport:
+Ask Kyle Tran about whether it's ok to include his work in here and credit him
+
+** Laser Triangulation
+Knowing the laser's exact position and orientation is paramount to keeping
+measured lengths as accurate as possible. However, due to manufacturing defects
+or perturbation during transit, the position of the laser will shift by small
+amounts both after the first initial measurement, as well as between dives.
+
+Here we cover the forward problem - calculating laser dot locations using a
+known laser position and orientation, and the inverse problem - calculating the
+laser position and orientation based on known laser dot locations.
+*** Quantity Definitions
+We define the following quantities:
+ - $\ell \in \mathbb{R}^3$: the location of the laser origin. To further constrain the problem ,we fix $\ell_z = 0$.
+ - $\alpha \in \mathbb{R}^3$: a unit vector that determines the direction of the laser from the laser origin.
+ - $p \in \mathbb{R}^3$: the 3D point at which the laser beam intersects with the fish.
+ - $\mathfrak{p} \in \mathbb{R}^2$: the image coordinates of the laser in pixels, assuming the center of the image is $(0,0)$.
+ - $f \in \mathbb{R}$: the focal length of the camera.
+ - $w \in \mathbb{R}$: the distance between the center of two pixels on the camera sensor, otherwise known as pixel pitch.
+ - $\mathfrak{p}_p \in \mathbb{R}^3$: the principal point. This is the true ``center'' of the imager found using camera calibration.
+ - $o \in \mathbb{R}^3$: the origin, which we define using the principal point. Specifically, the origin will be located at $\mathfrak{p}_p + \begin{bmatrix}0 & 0 & f\end{bmatrix}^T$.
+
+Figures\nbsp\ref{fig:diag} and \ref{fig:image_sensor} are used to illustrate these.
+
+#+CAPTION: Diagram demonstrating known quantities. Laser shown in green, fish plane shown in red, image sensor shown in gray.
+#+LABEL: fig:diag
+#+begin_figure
+    \centering
+    \begin{tikzpicture}
+    [cube/.style={very thick,black},
+			grid/.style={very thin,gray},
+			axis/.style={->,black,thick}];
+
+   \filldraw[
+        draw=red,%
+        fill=red!20,%
+    ]          (1,1,-5)
+            -- (1,-1,-5)
+            -- (-1,-1,-5)
+            -- (-1,1,-5)
+            -- cycle;
+    \filldraw[
+        draw=black,%
+        fill=black!20,%
+    ]          (0.2,0.15,1)
+            -- (0.2,-0.15,1)
+            -- (-0.2,-0.15,1)
+            -- (-0.2,0.15,1)
+            -- cycle;
+
+    \draw[green,thick]  (1.5,0.5,0) node[anchor=west,black]{$\alpha \mid \lVert\alpha\rVert = 1$} --(0.3,0.1,-5) node[anchor=west,black]{$p$};
+
+    \draw[->, black,thin] (1.5,0.5,0)--(1.26732998, 0.42244333, -0.96945842) node[anchor=east]{$\ell$};
+    \draw[black,dashed] (0.3,0.1,-5)--(0.3/6,0.1/6,1);
+    \draw[axis] (0,0,0)--(1,0,0) node[anchor=west]{$x$};
+    \draw[axis] (0,0,0)--(0,-1,0) node[anchor=west]{$y$};
+    \draw[axis] (0,0,0)--(0,0,-1) node[anchor=west]{$z$};
+    \end{tikzpicture}
+#+end_figure
+
+#+CAPTION: Close-up view of the image sensor. The distance between the plane and the origin is the focal length. $\mathfrak{p}$ is the image coordinate of the laser dot.
+#+LABEL: fig:image_sensor
+#+begin_figure
+    \centering
+    \begin{tikzpicture}
+    [cube/.style={very thick,black},
+			grid/.style={very thin,gray},
+			axis/.style={->,black,thick}];
+
+    \filldraw[
+        draw=black,%
+        fill=black!20,%
+    ]          (1,0.75,5)
+            -- (1,-0.75,5)
+            -- (-1,-0.75,5)
+            -- (-1,0.75,5)
+            -- cycle;
+
+
+    \draw[axis] (0,0,0)--(0.5,0,0) node[anchor=west]{$x$};
+    \draw[axis] (0,0,0)--(0,-0.5,0) node[anchor=west]{$y$};
+    \draw[axis] (0,0,0)--(0,0,-0.5) node[anchor=west]{$z$};
+
+    \draw[black,thin] (0,0,0)-- node[above]{$f$} ++(0,0,5) ;
+    \draw[black,dashed] (0,0,0) -- (0.25,0.1*5/6, 5) node[anchor=west]{$\mathfrak{p}$};
+
+    \end{tikzpicture}
+#+end_figure
+
+*** Forward Problem (Point Triangulation)
+Here we assume that laser beam origin $\alpha$ and laser beam orientation $\ell$ are known. $\mathfrak{p}$ is also known from the captured image. Our goal is to use this information to calculate $p$. 
+
+Firstly, we can calculate the vector in the camera's coordinate frame of the location of the laser dot on the image sensor, which we call $p_s$:
+\[
+p_s = \begin{pmatrix}-\mathfrak{p}_xw \\ -\mathfrak{p}_yw \\ -f\end{pmatrix}
+\]
+We can then get the unit vector that points from the origin toward the laser dot, which we call $v$:
+\[
+v = -\frac{p_s}{\lVert p_s \rVert}
+\]
+We 
+An observation that we leverage is that the laser beam, parameterized by $\ell + \lambda_1\alpha$, and $\lambda_2v$, must intersect at $p$. This gives us the equation
+\begin{equation}
+\ell + \lambda_1\alpha = \lambda_2v
+\end{equation}
+We can restructure this into a matrix multiplication where $\lambda_1$ and $\lambda_2$ are being transformed:
+\begin{equation}
+\begin{bmatrix}
+\alpha_x & -v_x \\
+\alpha_y & -v_y \\
+\alpha_z & -v_z
+\end{bmatrix}
+\begin{bmatrix} \lambda_1 \\ \lambda_2 \end{bmatrix} =
+\begin{bmatrix} -\ell_x \\ -\ell_y \\ 0 \end{bmatrix}
+\end{equation}
+This is an overconstrained problem for which, in general, no solution for $\lambda_1$ and $\lambda_2$ exists. We can, however, pose this as a least squares problem where we minimize the norm of the difference between the left and right hand sides:
+\begin{equation}
+\text{argmin}_{\lambda_1,\lambda_2} \left\lVert\begin{bmatrix} 
+        \alpha_x & -v_x \\
+        \alpha_y & -v_y \\
+        \alpha_z & -v_z
+    \end{bmatrix}\begin{bmatrix}
+        \lambda_1 \\ \lambda_2
+    \end{bmatrix} - \begin{bmatrix}
+        -\ell_x \\ -\ell_y \\ 0
+    \end{bmatrix}\right\rVert_2,
+\end{equation}
+Note that only one of the two scale parameters needs to be known in order for us to get the laser point. We choose $\lambda_2$, for which the following closed-form solution exists:
+\begin{equation}
+\lambda_2 = \frac{-\alpha^T \ell \alpha^T v + v^T \ell}{1 - (\alpha^T v)^2}
+\end{equation}
+We then trivially obtain $p$ from $p = \lambda_2v$.
+*** Inverse Problem (Calibration)
+Here we assume that $\alpha$ and $\ell$ are unknown, but we have $n$ images from which
+we obtain laser points $p_i$. Here I describe two possible algorithms to solve
+this.
+
+**** Hu
+We leverage the fact that the parameterized laser beam must intersect with
+the laser dot point to give us the following series of equations:
+\begin{equation}
+p_i = \lVert p_i - \ell \rVert\alpha + \ell
+\label{eq:problem}
+\end{equation}
+
+We stack these points into a single vector, defining the following; \[
+\mathbf{p} = \begin{bmatrix} p_1 \\ p_2 \\ \vdots \\ p_n \end{bmatrix} \] We
+have a relationship that relates our known quantities $p_i$ and unknown
+quantities $\alpha$ and $\ell$, though in this case the relationship is
+non-linear. We must therefore choose a non-linear optimization method to find
+the best candidates for $\alpha$ and $\ell$ that satisfy this.
+
+First we define a parameter vector $x$ that contains all of our parameters:
+\[
+x = \begin{bmatrix}
+\alpha \\
+\ell_x \\
+\ell_y
+\end{bmatrix}
+\]
+
+We must first define a function in terms of our parameters which we want to
+minimize:
+
+\[
+g_i(x) = \lVert p_i - \ell \rVert \alpha + \ell
+\]
+
+We then define the vector function $F(\alpha,\ell)$ as follows:
+\[
+\mathbf{g}(x) = \begin{bmatrix}
+g_1(x) \\
+g_2(x) \\
+\vdots \\
+g_n(x)
+\end{bmatrix}
+\]
+
+We then formulate this in terms of the following optimization problem:
+\begin{align}
+\text{argmin}_{x}\lVert \mathbf{r}(x)\rVert, \nonumber \\
+\mathbf{r}(x) = \mathbf{p} - \mathbf{g}(x) \label{eq:residual}
+\end{align}
+
+The method we currently choose to solve this is the Gauss-Newton method, which involves the following steps:
+1. Find the Jacobian $J_r$ of the minimizing function w.r.t to $x$.
+2. Take iterative steps of the following form:
+\[
+x^{(k+1)} = x^{(k)} - (J_r^TJ_r)^{-1}J_r \mathbf{r}(x^{(k)})
+\]
+
+According to Equation \ref{eq:residual}, only the second term depends on our parameters, so we can rework our iterative step into
+\[
+x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(\alpha,\ell)
+\]
+
+
+There are many other methods of this kind that we could have used, such as the
+Levenberg-Marquardt algorithm, though from our experiments this calibration
+method has been sufficient.
+
+The Jacobian of $\mathbf{g}(x)$ is given by the following:
+
+\begin{align}
+J_g &= \begin{bmatrix}
+J_{g\alpha}^1 & J_{g\ell}^1 \\
+J_{g\alpha}^2 & J_{g\ell}^2 \\
+\vdots & \vdots \\
+J_{g\alpha}^n & J_{g\ell}^n
+\end{bmatrix} \in \mathbb{R}^{3n\times5}\nonumber \\
+J_{g\alpha}^i &= \lVert p_i - \ell\rVert I \in \mathbb{R}^{3\times3}\\
+J_{g\ell}^i &= \begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+0 & 0
+\end{bmatrix}
+\left(I_{3\times3} - \alpha\frac{(p_i - \ell)^T}{\lVert p_i - \ell\rVert }\right) \in \mathbb{R}^{3\times2}
+\end{align}
+
+**** Atanasov
+
+* Testing
+** Pool Testing
+Many of our tests involved measuring a reference object. In order to fully
+simulate the purpose for which the device was intended, we use a fake rainbow
+trout. Each dummy is made from the same model, though different techniques have
+been used to make them negatively buoyant. Three generations of dummy fish,
+named Fred, George, and Ginny, have been used for these tests. Fred is shown in
+Figure \ref{fig:fred}.
+
+#+ATTR_LATEX: :scale 0.1
+#+ATTR_ORG: :width 200px
+#+CAPTION: Fred, our first fake fish. He, and all the others, are 31cm long.
+#+LABEL: fig:fred
+[[file:images/fred.jpg]]
+
+*** Annotations :noexport:
+ - the fake fish length measurement
+ - the checkerboard measurement
+ - comparison between Gauss-Newton laser calibration and Nikolay's method
+
+
+** La Jolla Coastline
+In order to gain some insight into how this system would behave in real world
+conditions, we used this system on fish off the La Jolla coast.
+
+
+** REEF Deployment
+
+* Backmatter :ignore:
+\bibliographystyle{plain}
+\bibliography{fishsense}
+* Problem Motivation                                               :noexport:
+Scrapping this, it's too wordy 
+
+I will begin describing the problem with some background on the work that Engineers for Exploration (E4E for short) does, as I think it provides important context for where the work came from.
+
+** Who are E4E?
+Engineers for Exploration are a research lab that specializes in developing instrumentation for studying wildlife conservation and archaeology. Founded by Professors Ryan Kastner and Curt Schurgers, along with Albert Lin, it combines engineering with conservation efforts to create a completely unique research area that is highly interdisciplinary. We primarily collaborate with scientists with the goal of aiding them in their research, by designing systems that suit their specific needs. Some examples of projects that we currently do include: Acoustic Species ID, a collaboration with the San Diego Zoo with the goal of studying bird populations in the Amazon Rainforests by classifying bird calls from audio moths. 
+
+** Our Collaborators and Their Goals
+Fishsense's primary collaborators are the Semmens Lab in the Scripps Institute of Oceanography, and the Reef Environmental Education Foundation (REEF). Much of my current understanding of how fish lengths are recorded is based on work done by Professor Brice Semmens \nbsp\cite{Heppell2012}.
+
+** My Role
+I began attending UCSD as an undergraduate in September of 2018, and had been intermittently involved with several of E4E's projects. In September of 2022, I was moved from the Radio Telemetry Tracking project onto Fishsense to investigate issues with a previous prototype. The device consisted of a waterproof enclosure containing an Intel Realsense D455 and an NVIDIA Jetson TX2, which was designed to process depth maps and convert these to fish lengths of all fishes in a particular scene in real time. The issues with this device were two-fold: the Realsense lacked sufficient resolution for species identification, and distortions stemming from Snell's law prevented us from obtaining accurate depth maps.
+
+After several unsuccessful attempts at underwater calibration of the Realsense, we decided to pivot to a much more rudimentary solution - rigidly attach a laser beam to a normal underwater camera, have a diver take images of fish with this laser beam on the fish, and perform post-processing to extract fish length. This work will primarily be focused on this device. rigidly attach a laser beam to a normal underwater camera, have a diver take images of fish with this laser beam on the fish, and perform post-processing to extract fish length. This work will primarily be focused on this device.
+
+** Applications of the System
+The problem that this system aims to solve is slightly different from the original intent of the project - since our system is much more accessible than our previous prototype, it can be easily deployed in the hands of recreational divers, who can collect and upload data that will become publicly available for worldwide usage. We henceforth refer to these recreational divers as "citizen scientists". Citizen science efforts allow for data collection over a much wider area than is possible with specialized research deployments. 
+
+Our desired accuracy goal with this system is only within 20% of the true fish length - for this type of data, quantity is desired over quality, especially if the error is consistent, as methods exist to compensate for those types of errors. In addition, the current primary method of collecting these data is to visually estimate the length of a fish, which humans are capable of doing to within 20% of true length, but requires retraining as frequent as once every 6 months. 
