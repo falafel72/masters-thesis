@@ -232,7 +232,6 @@ A summary of these underwater ranging methods can be seen in
 Table\nbsp\ref{tab:comparison}, including Fishsense Lite.
 
 *** Underwater Imaging
-
 *** Planar Object Registration
 
 * System Description 
@@ -272,7 +271,7 @@ The device used to take the fish images must fit the following assumptions:
 3. The laser beam must be mounted rigidly to the imager.
 4. The laser dot must be visible within the image for all desired ranges.
 
-Our fully assembled Fishsense Lite unit is shown in Figure\nbsp\ref{fig:fsl}.
+One example of our implementation of the Fishsense Lite unit is shown in Figure\nbsp\ref{fig:fsl}.
 
 #+ATTR_LATEX: :scale 0.2  :options angle=-90
 #+ATTR_ORG: :width 200px
@@ -280,16 +279,28 @@ Our fully assembled Fishsense Lite unit is shown in Figure\nbsp\ref{fig:fsl}.
 #+label: fig:fsl
 [[file:images/fishsense-lite-system.jpg]]
 
+We currently have seven Fishsense Lite camera units, codenamed FSL-01 through
+FSL-07. These are all comprised of exactly the same hardware components listed
+below.
 *** Camera
 For our own testing, we use an Olympus TG6, a common camera for divers to own
 for underwater photography.
 **** Wide Angle Lens
+To fit assumption 2, we must have some way to rectify images taken by the
+camera. Distortions from Snell's law make this impossible\nbsp\ref{Agrawal2012}, so
+we add a corrective optic in order to correct these distortions. Future work is
+required for us to understand how to model these distortions better so we can
+ultimately remove this.
 
 **** Annotations                                                   :noexport:
 resolution requirements
 rectified image assumption
 *** Laser Mount
-In order to secure the 
+To secure the laser rigidly to the camera, we have designed a mount made of
+polylactic acid. Field testing has shown these mounts break down with prolonged
+use, though we anticipate that the target audience of these devices
+(recreational divers) will only take this setup on several dives a year, and so
+not have to worry about these effects.
 **** Annotations :noexport:
 Ask Adrian if it's ok to include his work here.
 *** Laser Pointer
@@ -308,10 +319,6 @@ we found that the red laser became incredibly difficult to spot at around 5m.
 The second is fish behavior - from tests with real fish, divers have observed
 that fish tend to avoid the green laser. Our main hypothesis for why this occurs
 is that fish are able to see green light far better than red.
-*** Existing Physical Devices
-We currently have seven Fishsense Lite camera units, codenamed FSL-01 through
-FSL-07. These are all comprised of exactly the same hardware components listed
-above.
 ** Software
 In order to obtain length measurements from the captured images, we use a custom
 software pipeline to extract the necessary features to measure length. Algorithm
@@ -340,8 +347,12 @@ we plan to move this to a Rust codebase.
 \end{algorithm}
 *** Image Rectification
 All calculations relating to image projection rely on pinhole camera model
-assumptions. 
+assumptions. In order to ensure that images fit this assumption, we rely on the
+camera matrix $K$ obtained in the calibration process, as well as lens
+distortion parameters.
 *** Raw Processing
+
+
 **** Annotations :noexport:
 Ask Hamish about whether it's ok to include his work in here and credit him
 *** Field Calibration
@@ -486,7 +497,7 @@ We then trivially obtain $p$ from $p = \lambda_2v$.
 *** Inverse Problem (Calibration)
 Here we assume that $\alpha$ and $\ell$ are unknown, but we have $n$ images from which
 we obtain laser points $p_i$. Here I describe two possible algorithms to solve
-this.
+this. A comparison of the two methods is presented in [[*Pool Testing]].
 
 **** Hu
 We leverage the fact that the parameterized laser beam must intersect with
@@ -571,6 +582,12 @@ J_{g\ell}^i &= \begin{bmatrix}
 \end{align}
 
 **** Atanasov
+Once again assuming we have $n$ images with image $i$ corresponding with laser
+dot point $p_i$, a straightforward method to get our laser trajectory $\alpha$ can be
+obtained from a normed average over the differences between all points:
+\[
+        \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neqi}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
+\]
 
 * Testing
 ** Pool Testing
@@ -595,7 +612,8 @@ Figure \ref{fig:fred}.
 
 ** La Jolla Coastline
 In order to gain some insight into how this system would behave in real world
-conditions, we used this system on fish off the La Jolla coast.
+conditions, we used this system on fish off the La Jolla coast. This section
+details experiments performed by Nathan Hui and Jack Elstner.
 
 
 ** REEF Deployment
