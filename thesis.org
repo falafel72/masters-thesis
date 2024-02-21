@@ -93,7 +93,7 @@ re-training and is prone to a percentage length error of around 20%. This paper
 proposes a novel system made of components that many divers already possess,
 including a waterproof camera and laser pointer. To this, we add a custom mount,
 along with post-processing software to extract length data from captured images.
-The system provides less error (<15%) than human-made length measurements, and
+The system provides less error ($< 15\%$) than human-made length measurements, and
 allows recreational divers to act as citizen scientists and gather vital fish
 length data with minimal required training.
 #+END_dissertationabstract
@@ -111,7 +111,7 @@ This work examines one particular metric of interest: fish length. In context of
 the typical length of a species and the typical length within a population, fish
 length serves as a useful quantitative metric for determining the overall health
 of a fish population. Studies of fish length have also been used to quantify the
-impact of specific fishing policies \nbsp\cite{Heppell2012}.
+impact of specific fishing policies\nbsp\cite{Heppell2012}.
 
 Current global fish length data typically comes from catch and release programs.
 In California, the California Collaborative Fisheries Research Program (CCFRP)
@@ -122,8 +122,8 @@ approach is desirable.
 
 Roving diver surveys, where a team of divers conducts a visual census of fish
 species and their lengths, are one such approach, though humans are only capable
-of estimating to within 20% of a fish's true length \cite{}. This skill also
-requires retraining as frequent as once every 6 months \cite{}.
+of estimating to within 20% of a fish's true length \cite{Harvey2001}. This skill also
+requires retraining as frequent as once every 6 months \cite{Bell1985}.
 
 This work presents one potential solution - a device that can be used by any
 recreational diver made from off-the-shelf components, that produces estimations
@@ -138,7 +138,8 @@ physical device. This is presented as a solution to object measurement. The
 implications of the accuracy bounds of this type of solution will be detailed in
 a later section.
 
-The length measurement algorithm makes the following assumptions about the object of interest:
+The length measurement algorithm makes the following assumptions about the
+object of interest:
 1. The object is planar.
 2. The object is parallel with the image plane.
 3. The laser dot is visible and lies in the same plane as the object.
@@ -151,9 +152,14 @@ visually estimate the length of a fish, which humans are capable of doing to
 within 20% of true length, but requires retraining as frequent as once every 6
 months.
 
-In situations where higher accuracy is required, such as construction\nbsp\cite{},
-this particular device may not be ideal, as the accuracy requirements are much
-more strict.
+Another important assumption that we make is that the image is rectified. We
+have found that Snell's law is a significant enough problem for image distortion
+that can cause major inaccuracies in depth estimation\nbsp
+\cite{Agrawal2012,Luczynski2017}, though work on investigating solutions to
+these problems is ongoing and is outside of the scope of this work.
+
+In situations where higher accuracy is required, such as construction, this
+particular device may not be ideal.
 
 ** Related Work
 I consulted works in several different domains during the construction of this
@@ -547,6 +553,11 @@ obtained from a normed average over the differences between all points:
         \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neqi}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
 \]
 
+This can be flipped as necessary to face the direction in which the laser beam
+travels. Once $\alpha$ is obtained, we can choose a point $p_k$ such that $p_k$ is on
+our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with the
+$xy$ plane to be $\ell$.
+
 ** Software
 In order to obtain length measurements from the captured images, we use a custom
 software pipeline to extract the necessary features to measure length. Algorithm
@@ -612,17 +623,17 @@ Figure \ref{fig:fred}.
 #+LABEL: fig:fred
 [[file:images/fred.jpg]]
 
+*** Calibration
+*** Laser Calibration Algorithm
 *** Annotations :noexport:
  - the fake fish length measurement
  - the checkerboard measurement
  - comparison between Gauss-Newton laser calibration and Nikolay's method
 
-
 ** La Jolla Coastline
 In order to gain some insight into how this system would behave in real world
 conditions, we used this system on fish off the La Jolla coast. This section
 details experiments performed by Nathan Hui and Jack Elstner.
-
 
 ** REEF Deployment
 
@@ -638,7 +649,7 @@ I will begin describing the problem with some background on the work that Engine
 Engineers for Exploration are a research lab that specializes in developing instrumentation for studying wildlife conservation and archaeology. Founded by Professors Ryan Kastner and Curt Schurgers, along with Albert Lin, it combines engineering with conservation efforts to create a completely unique research area that is highly interdisciplinary. We primarily collaborate with scientists with the goal of aiding them in their research, by designing systems that suit their specific needs. Some examples of projects that we currently do include: Acoustic Species ID, a collaboration with the San Diego Zoo with the goal of studying bird populations in the Amazon Rainforests by classifying bird calls from audio moths. 
 
 ** Our Collaborators and Their Goals
-Fishsense's primary collaborators are the Semmens Lab in the Scripps Institute of Oceanography, and the Reef Environmental Education Foundation (REEF). Much of my current understanding of how fish lengths are recorded is based on work done by Professor Brice Semmens \nbsp\cite{Heppell2012}.
+Fishsense's primary collaborators are the Semmens Lab in the Scripps Institute of Oceanography, and the Reef Environmental Education Foundation (REEF). Much of my current understanding of how fish lengths are recorded is based on work done by Professor Brice Semmens\nbsp\cite{Heppell2012}.
 
 ** My Role
 I began attending UCSD as an undergraduate in September of 2018, and had been intermittently involved with several of E4E's projects. In September of 2022, I was moved from the Radio Telemetry Tracking project onto Fishsense to investigate issues with a previous prototype. The device consisted of a waterproof enclosure containing an Intel Realsense D455 and an NVIDIA Jetson TX2, which was designed to process depth maps and convert these to fish lengths of all fishes in a particular scene in real time. The issues with this device were two-fold: the Realsense lacked sufficient resolution for species identification, and distortions stemming from Snell's law prevented us from obtaining accurate depth maps.
