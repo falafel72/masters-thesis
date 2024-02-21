@@ -13,7 +13,7 @@
 #+LATEX: \makesignature
 
 #+BEGIN_dedication
-
+To Kat, my friends, and my family.
 #+END_dedication
 
 #+BEGIN_epigraph
@@ -55,8 +55,8 @@ the members of REEF for testing this system and providing us with the initial
 problem we aim to solve. An additional thank you to Patrick Paxson and Peter
 Tueller, whose work laid the foundation for our current research.
 
-Most importantly, thank you to Fred the fake fish, who we dearly miss. May he enjoy his freedom in
-the Pacific Ocean.
+Most importantly, thank you to Fred the fake fish, who we dearly miss. May he
+enjoy his freedom in the Pacific Ocean.
 
 I would also like to thank the people I've met during my time at UCSD, who have
 made this journey worth it.
@@ -69,10 +69,12 @@ Thank you to Matei Gardus, who taught me how to use emacs org-mode several years
 ago, and is what this document is written with.
 
 Thank you to the members of UCSD Quizbowl, in particular to Alistair Gray, who
-is a dear friend, and to Praveen Nair, who had me include the Dr. Seuss quote in
-the epigraph.
+is a dear friend, and to Praveen Nair, who asked me to include the Dr. Seuss
+quote in the epigraph.
 
-Thank you the "ibob" crew,
+Thank you the "ibob" crew, who have fostered my love for technology and with who
+I have created a thriving community of people with similar interests through
+UCSD's ACM chapter.
 
 Thank you to Daniel Truong, as well as both the San Diego Smash and Fighting
 Game communities, for allowing me to grow emotionally that much more.
@@ -234,36 +236,37 @@ Table\nbsp\ref{tab:comparison}, including Fishsense Lite.
 *** Underwater Imaging
 *** Planar Object Registration
 
-* System Description 
+* Implementation Details
+The following chapter contains material from a previously published work.
+** Annotations :noexport:
+Acknowledge the Mobisys paper when it gets published
+** System Description
 The current Fishsense Lite system has two main components: the physical image
 taking device combined with a laser pointer, and software that processes the
 images from the device.
-** Usage Guide
+*** Usage Guide
 Prior to deploying this device in the field, calibration procedures must be
 performed to maximize the accuracy of the obtained measurements.
-*** Offline Procedures
-**** Camera Calibration
+**** Offline Procedures
+***** Camera Calibration
 The internal parameters of the camera must be calibrated in water. This is
 currently achieved using Zhang's method \nbsp\cite{Zhang2000}, and is performed in a
 swimming pool.
 
-**** Laser Calibration
+***** Laser Calibration
 The precise position and orientation of the laser beam must also be estimated.
 Currently we do this by using a flat object with known features -- a dive slate
 with duct tape on it, in our case. Multiple images of this flat object must be
 taken with the laser dot on it in order to estimate the laser beam's parameters.
 
-*** Online Procedures
+**** Online Procedures
 When in use, the diver points the laser pointer towards a fish and takes a
 picture. The laser dot is generally in parallel with the camera, so it acts a
 guide for the diver to ensure the image will meet our requirements, even in
 cases where the viewfinder is too dim to see the image being taken.
-*** Post Processing
+**** Post Processing
 After a dive or a series of dives, the diver can then upload the data to an
 automated software pipeline that calculates the fish length.
-* Implementation Details
-** Annotations :noexport:
-Acknowledge the Mobisys paper when it gets published
 ** Hardware
 The device used to take the fish images must fit the following assumptions:
 1. The system must have an imager that images can be extracted from.
@@ -319,51 +322,6 @@ we found that the red laser became incredibly difficult to spot at around 5m.
 The second is fish behavior - from tests with real fish, divers have observed
 that fish tend to avoid the green laser. Our main hypothesis for why this occurs
 is that fish are able to see green light far better than red.
-** Software
-In order to obtain length measurements from the captured images, we use a custom
-software pipeline to extract the necessary features to measure length. Algorithm
-\ref{alg:pipeline} shows a summary of the pipeline.
-
-This algorithm is currently written in Python and run manually, though in future
-we plan to move this to a Rust codebase.
-
-\begin{algorithm}
-\caption{Image processing pipeline.}
-\label{alg:pipeline}
-\begin{algorithmic}
-\Require Image $I$, camera matrix $K$, laser parameters $\alpha$ and $\ell$
-\State $I_R \gets \text{rectify}(I, K)$
-\If{$\text{not laserInImage}(I_R)$} \\
-    \COMMENT{Reject image.}
-\EndIf
-\State $_{}P_{\text{laser} }\gets \text{getLaserDot}(I_R)$
-\If{$\text{not fishInImage}(I_R)$} \\
-    \COMMENT{Reject image.}
-\EndIf
-\State $P_{\text{head}},P_{\text{tail}} \gets \text{getHeadTail}(I_R)$
-\State $L \gets \text{getFishLength}(I_R, P_{\text{head}}, P_{\text{tail}}, P_{\text{laser}})$ \\
-\Return $L$
-\end{algorithmic}
-\end{algorithm}
-*** Image Rectification
-All calculations relating to image projection rely on pinhole camera model
-assumptions. In order to ensure that images fit this assumption, we rely on the
-camera matrix $K$ obtained in the calibration process, as well as lens
-distortion parameters.
-*** Raw Processing
-
-
-**** Annotations :noexport:
-Ask Hamish about whether it's ok to include his work in here and credit him
-*** Field Calibration
-
-*** Automatic Laser Detection
-**** Annotations :noexport:
-Ask Viva for permission to include his work in here and make sure to credit him
-*** Fish Segmentation
-**** Annotations :noexport:
-Ask Kyle Tran about whether it's ok to include his work in here and credit him
-
 ** Laser Triangulation
 Knowing the laser's exact position and orientation is paramount to keeping
 measured lengths as accurate as possible. However, due to manufacturing defects
@@ -452,7 +410,7 @@ Figures\nbsp\ref{fig:diag} and \ref{fig:image_sensor} are used to illustrate the
 #+end_figure
 
 *** Forward Problem (Point Triangulation)
-Here we assume that laser beam origin $\alpha$ and laser beam orientation $\ell$ are known. $\mathfrak{p}$ is also known from the captured image. Our goal is to use this information to calculate $p$. 
+Here we assume that laser beam origin $\alpha$ and laser beam orientation $\ell$ are known. $\mathfrak{p}$ is also known from the captured image. Our goal is to use this information to calculate $p$.
 
 Firstly, we can calculate the vector in the camera's coordinate frame of the location of the laser dot on the image sensor, which we call $p_s$:
 \[
@@ -462,7 +420,7 @@ We can then get the unit vector that points from the origin toward the laser dot
 \[
 v = -\frac{p_s}{\lVert p_s \rVert}
 \]
-We 
+We
 An observation that we leverage is that the laser beam, parameterized by $\ell + \lambda_1\alpha$, and $\lambda_2v$, must intersect at $p$. This gives us the equation
 \begin{equation}
 \ell + \lambda_1\alpha = \lambda_2v
@@ -479,7 +437,7 @@ We can restructure this into a matrix multiplication where $\lambda_1$ and $\lam
 \end{equation}
 This is an overconstrained problem for which, in general, no solution for $\lambda_1$ and $\lambda_2$ exists. We can, however, pose this as a least squares problem where we minimize the norm of the difference between the left and right hand sides:
 \begin{equation}
-\text{argmin}_{\lambda_1,\lambda_2} \left\lVert\begin{bmatrix} 
+\text{argmin}_{\lambda_1,\lambda_2} \left\lVert\begin{bmatrix}
         \alpha_x & -v_x \\
         \alpha_y & -v_y \\
         \alpha_z & -v_z
@@ -497,7 +455,7 @@ We then trivially obtain $p$ from $p = \lambda_2v$.
 *** Inverse Problem (Calibration)
 Here we assume that $\alpha$ and $\ell$ are unknown, but we have $n$ images from which
 we obtain laser points $p_i$. Here I describe two possible algorithms to solve
-this. A comparison of the two methods is presented in [[*Pool Testing]].
+this. A comparison of the two methods is presented in [[* Pool Testing]].
 
 **** Hu
 We leverage the fact that the parameterized laser beam must intersect with
@@ -588,6 +546,56 @@ obtained from a normed average over the differences between all points:
 \[
         \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neqi}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
 \]
+
+** Software
+In order to obtain length measurements from the captured images, we use a custom
+software pipeline to extract the necessary features to measure length. Algorithm
+\ref{alg:pipeline} shows a summary of the pipeline.
+
+This algorithm is currently written in Python and run manually, though in future
+we plan to move this to a Rust codebase.
+
+\begin{algorithm}
+\caption{Image processing pipeline.}
+\label{alg:pipeline}
+\begin{algorithmic}
+\Require Image $I$, camera matrix $K$, laser parameters $\alpha$ and $\ell$
+\State $I_R \gets \text{rectify}(I, K)$
+\If{$\text{not laserInImage}(I_R)$} \\
+    \COMMENT{Reject image.}
+\EndIf
+\State $_{}P_{\text{laser} }\gets \text{getLaserDot}(I_R)$
+\If{$\text{not fishInImage}(I_R)$} \\
+    \COMMENT{Reject image.}
+\EndIf
+\State $P_{\text{head}},P_{\text{tail}} \gets \text{getHeadTail}(I_R)$
+\State $L \gets \text{getFishLength}(I_R, P_{\text{head}}, P_{\text{tail}}, P_{\text{laser}})$ \\
+\Return $L$
+\end{algorithmic}
+\end{algorithm}
+*** Image Rectification
+All calculations relating to image projection rely on pinhole camera model
+assumptions. In order to ensure that images fit this assumption, we rely on the
+camera matrix $K$ obtained in the calibration process, as well as lens
+distortion parameters. This is currently accomplished using OpenCV's standard
+camera model, with it's built in calibrateCamera function.
+*** Raw Processing
+Figure \ref{} and \ref{} show a raw image compared with a JPEG from the same
+camera - we can observe that our camera performs some distortion correction. To
+ensure that we have full control over the entire image processing pipeline, we
+begin our operation on purely the raw images. The most important component of
+this stage is color correction, as correcting the raw image in a certain way may
+make the laser dot easier to spot.
+**** Annotations :noexport:
+Ask Hamish about whether it's ok to include his work in here and credit him
+*** Field Calibration
+
+*** Automatic Laser Detection
+**** Annotations :noexport:
+Ask Viva for permission to include his work in here and make sure to credit him
+*** Fish Segmentation
+**** Annotations :noexport:
+Ask Kyle Tran about whether it's ok to include his work in here and credit him
 
 * Testing
 ** Pool Testing
