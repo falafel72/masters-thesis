@@ -99,7 +99,7 @@ length data with minimal required training.
 #+END_dissertationabstract
 ** Annotation                                                      :noexport:
 Verify the requirements for including material from your own paper
-* Introduction 
+* Introduction
 Marine ecosystems provide humankind many resources which we depend on.
 Phytoplankton account for 70% of all photosynthesis on Earth, and marine
 agriculture is an important source of food worldwide. Data that can be used to
@@ -125,11 +125,11 @@ species and their lengths, are one such approach, though humans are only capable
 of estimating to within 20% of a fish's true length \cite{Harvey2001}. This skill also
 requires retraining as frequent as once every 6 months \cite{Bell1985}.
 
-This work presents one potential solution - a device that can be used by any
-recreational diver made from off-the-shelf components, that produces estimations
-more accurately than a human being can. Dubbed Fishsense Lite, this device
-incorporates laser triangulation techniques to allow divers to take images of a
-fish and use them to estimate fish length.
+This work presents a collaboration with the Semmens Lab and REEF: a device that
+can be used by any recreational diver made from off-the-shelf components, that
+produces estimations more accurately than a human being can. Dubbed Fishsense
+Lite, this device incorporates laser triangulation techniques to allow divers to
+take images of a fish and use them to estimate fish length.
 
 ** Problem Specification
 This work will target the Fishsense Lite - the device that consists of the laser
@@ -239,8 +239,21 @@ Data from both modules must be combined and processed manually to obtain lengths
 A summary of these underwater ranging methods can be seen in
 Table\nbsp\ref{tab:comparison}, including Fishsense Lite.
 
-*** Underwater Imaging
-*** Planar Object Registration
+*** Underwater Length Measurement
+Previous work has been conducted with Engineers for Exploration under the
+Fishsense umbrella\nbsp\cite{Paxson2022, Tueller2021}. These attempts involved using
+an Intel Realsense D455 -- a depth camera that used both stereo cameras and
+structured light in order to infer depth information. This camera was paired
+with a NVIDIA Jetson TX2 for onboard video processing, and was fully contained
+in a waterproof enclosure with onboard power and storage. Since the Realsense
+was up against a flat acrylic port, distortions from Snell's law caused both the
+incoming images and the structured infrared light to refract, which yielded
+erroneous depth map information. On top of this, some of the infrared light
+reflected back into the lens, adding additional color artefacts in the images
+produced, rendering species identification impossible. Traditional camera
+calibration procedures are also difficult to do underwater, if not
+impossible\nbsp\cite{Wong2022}. We concluded that until we are able to model Snell's
+law distortions, a stereo camera approach would be impossible.
 
 * Implementation Details
 The following chapter contains material from a previously published work.
@@ -558,6 +571,27 @@ travels. Once $\alpha$ is obtained, we can choose a point $p_k$ such that $p_k$ 
 our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with the
 $xy$ plane to be $\ell$.
 
+*** Laser Calibration Procedures
+Since our laser mount is not stable enough to guarantee that laser parameters
+stay consistent between dives, we require a laser calibration at the beginning
+of every dive. To do this, we assume that we know the optical frame coordinates
+of each laser dot $p_i$. This requires that we have some kind of depth reference.
+
+The first method that we tested was to use the same checkerboard pattern used in
+camera calibration. The main reasoning for this method was that there are two
+parts to this method for which OpenCV provides functionality for - detecting
+corners of specifically the checkerboard pattern, and calculating a 3D
+transformation given object points and corresponding points in an image.
+However, in the field, requiring that divers carry a large and heavy
+checkerboard for every dive is a large ask.
+
+We have developed a procedure that does not utilize a checkerboard, and can
+instead be done with a dive slate -- something that most divers will carry. We
+add pieces of duct tape in an arbitrary pattern on one side to make the slate
+more featureful. We also make the assumption that the slate remains close to
+parallel with the image plane.
+
+
 ** Software
 In order to obtain length measurements from the captured images, we use a custom
 software pipeline to extract the necessary features to measure length. Algorithm
@@ -600,7 +634,6 @@ make the laser dot easier to spot.
 **** Annotations :noexport:
 Ask Hamish about whether it's ok to include his work in here and credit him
 *** Field Calibration
-
 *** Automatic Laser Detection
 **** Annotations :noexport:
 Ask Viva for permission to include his work in here and make sure to credit him
@@ -623,9 +656,10 @@ Figure \ref{fig:fred}.
 #+LABEL: fig:fred
 [[file:images/fred.jpg]]
 
-*** Calibration
-*** Laser Calibration Algorithm
-*** Annotations :noexport:
+*** Laser Calibration Algorithm Accuracy
+*** Laser Attenuation Testing
+*** Robustness to Tilt
+*** Annotations                                                    :noexport:
  - the fake fish length measurement
  - the checkerboard measurement
  - comparison between Gauss-Newton laser calibration and Nikolay's method
@@ -635,7 +669,44 @@ In order to gain some insight into how this system would behave in real world
 conditions, we used this system on fish off the La Jolla coast. This section
 details experiments performed by Nathan Hui and Jack Elstner.
 
+Water conditions in La Jolla are turbid, so this was an opportunity to test how
+our system would fare in low visibility conditions. The main goal of this test
+was to evaluate the red and green lasers, looking both at attenuation and how
+fish would react.
+
+*** Procedure
+Two devices, FSL-N and FSL-01, were used during this test. FSL-N was fitted with
+the green laser, and FSL-01 with the red.
+
+We used Fred as a reference object and took measurement photos from very close
+(about 1m) to as far as visibility allowed. This was done with both FSL-N and
+FSL-01. After this, divers conducted a roving survey, taking fish measurement
+images in the same area. Divers did not take images of the same individuals.
+
+*** Findings
+Unsurprisingly, we found that the red laser attenuated much more than the green
+laser.
+
+One other interesting result was related to the change in salinity between pool
+water and sea water. Length measurements obtained in salt water were generally
+higher than length measurements obtained in pool water.
+
+**** Attenuation
+**** Fish Behavior
+**** Effect of Salinity
+This was Fred's final test. According to our recorded logs, we know the following:
+#+BEGIN_QUOTE
+Anchor stuck, Fred was secured to anchor before ascent. Fred lost when anchor was retrieved.
+#+END_QUOTE
+We thank Fred for his service.
+
 ** REEF Deployment
+REEF helps Brice do population studies
+Brice reached out to Fishsense to help develop camera, REEF provided funding through NOAA
+
+*** Procedure
+*** User Experience
+*** Findings
 
 * Backmatter :ignore:
 \bibliographystyle{plain}
@@ -643,20 +714,62 @@ details experiments performed by Nathan Hui and Jack Elstner.
 * Problem Motivation                                               :noexport:
 Scrapping this, it's too wordy 
 
-I will begin describing the problem with some background on the work that Engineers for Exploration (E4E for short) does, as I think it provides important context for where the work came from.
+I will begin describing the problem with some background on the work that
+Engineers for Exploration (E4E for short) does, as I think it provides important
+context for where the work came from.
 
 ** Who are E4E?
-Engineers for Exploration are a research lab that specializes in developing instrumentation for studying wildlife conservation and archaeology. Founded by Professors Ryan Kastner and Curt Schurgers, along with Albert Lin, it combines engineering with conservation efforts to create a completely unique research area that is highly interdisciplinary. We primarily collaborate with scientists with the goal of aiding them in their research, by designing systems that suit their specific needs. Some examples of projects that we currently do include: Acoustic Species ID, a collaboration with the San Diego Zoo with the goal of studying bird populations in the Amazon Rainforests by classifying bird calls from audio moths. 
+Engineers for Exploration are a research lab that specializes in developing
+instrumentation for studying wildlife conservation and archaeology. Founded by
+Professors Ryan Kastner and Curt Schurgers, along with Albert Lin, it combines
+engineering with conservation efforts to create a completely unique research
+area that is highly interdisciplinary. We primarily collaborate with scientists
+with the goal of aiding them in their research, by designing systems that suit
+their specific needs. Some examples of projects that we currently do include:
+Acoustic Species ID, a collaboration with the San Diego Zoo with the goal of
+studying bird populations in the Amazon Rainforests by classifying bird calls
+from audio moths.
 
 ** Our Collaborators and Their Goals
-Fishsense's primary collaborators are the Semmens Lab in the Scripps Institute of Oceanography, and the Reef Environmental Education Foundation (REEF). Much of my current understanding of how fish lengths are recorded is based on work done by Professor Brice Semmens\nbsp\cite{Heppell2012}.
+Fishsense's primary collaborators are the Semmens Lab in the Scripps Institute
+of Oceanography, and the Reef Environmental Education Foundation (REEF). Much of
+my current understanding of how fish lengths are recorded is based on work done
+by Professor Brice Semmens\nbsp\cite{Heppell2012}.
 
 ** My Role
-I began attending UCSD as an undergraduate in September of 2018, and had been intermittently involved with several of E4E's projects. In September of 2022, I was moved from the Radio Telemetry Tracking project onto Fishsense to investigate issues with a previous prototype. The device consisted of a waterproof enclosure containing an Intel Realsense D455 and an NVIDIA Jetson TX2, which was designed to process depth maps and convert these to fish lengths of all fishes in a particular scene in real time. The issues with this device were two-fold: the Realsense lacked sufficient resolution for species identification, and distortions stemming from Snell's law prevented us from obtaining accurate depth maps.
+I began attending UCSD as an undergraduate in September of 2018, and had been
+intermittently involved with several of E4E's projects. In September of 2022, I
+was moved from the Radio Telemetry Tracking project onto Fishsense to
+investigate issues with a previous prototype. The device consisted of a
+waterproof enclosure containing an Intel Realsense D455 and an NVIDIA Jetson
+TX2, which was designed to process depth maps and convert these to fish lengths
+of all fishes in a particular scene in real time. The issues with this device
+were two-fold: the Realsense lacked sufficient resolution for species
+identification, and distortions stemming from Snell's law prevented us from
+obtaining accurate depth maps.
 
-After several unsuccessful attempts at underwater calibration of the Realsense, we decided to pivot to a much more rudimentary solution - rigidly attach a laser beam to a normal underwater camera, have a diver take images of fish with this laser beam on the fish, and perform post-processing to extract fish length. This work will primarily be focused on this device. rigidly attach a laser beam to a normal underwater camera, have a diver take images of fish with this laser beam on the fish, and perform post-processing to extract fish length. This work will primarily be focused on this device.
+After several unsuccessful attempts at underwater calibration of the Realsense,
+we decided to pivot to a much more rudimentary solution - rigidly attach a laser
+beam to a normal underwater camera, have a diver take images of fish with this
+laser beam on the fish, and perform post-processing to extract fish length. This
+work will primarily be focused on this device. rigidly attach a laser beam to a
+normal underwater camera, have a diver take images of fish with this laser beam
+on the fish, and perform post-processing to extract fish length. This work will
+primarily be focused on this device.
 
 ** Applications of the System
-The problem that this system aims to solve is slightly different from the original intent of the project - since our system is much more accessible than our previous prototype, it can be easily deployed in the hands of recreational divers, who can collect and upload data that will become publicly available for worldwide usage. We henceforth refer to these recreational divers as "citizen scientists". Citizen science efforts allow for data collection over a much wider area than is possible with specialized research deployments. 
+The problem that this system aims to solve is slightly different from the
+original intent of the project - since our system is much more accessible than
+our previous prototype, it can be easily deployed in the hands of recreational
+divers, who can collect and upload data that will become publicly available for
+worldwide usage. We henceforth refer to these recreational divers as "citizen
+scientists". Citizen science efforts allow for data collection over a much wider
+area than is possible with specialized research deployments.
 
-Our desired accuracy goal with this system is only within 20% of the true fish length - for this type of data, quantity is desired over quality, especially if the error is consistent, as methods exist to compensate for those types of errors. In addition, the current primary method of collecting these data is to visually estimate the length of a fish, which humans are capable of doing to within 20% of true length, but requires retraining as frequent as once every 6 months. 
+Our desired accuracy goal with this system is only within 20% of the true fish
+length - for this type of data, quantity is desired over quality, especially if
+the error is consistent, as methods exist to compensate for those types of
+errors. In addition, the current primary method of collecting these data is to
+visually estimate the length of a fish, which humans are capable of doing to
+within 20% of true length, but requires retraining as frequent as once every 6
+months.
