@@ -100,6 +100,7 @@ length data with minimal required training.
 ** Annotation                                                      :noexport:
 Verify the requirements for including material from your own paper
 * Introduction
+** Preamble :ignore:
 Marine ecosystems provide humankind many resources which we depend on.
 Phytoplankton account for 70% of all photosynthesis on Earth, and marine
 agriculture is an important source of food worldwide. Data that can be used to
@@ -165,20 +166,20 @@ particular device may not be ideal.
 I consulted works in several different domains during the construction of this
 project. These domains will be detailed in this section.
 *** Underwater Ranging
-#+ATTR_LATEX: :float multicolumn :mode math :align |c||c|c|c|c| :width 70%
+#+ATTR_LATEX: :float sideways :align |c||c|c|c|c| :width 70%
 #+CAPTION: Comparison of different underwater ranging techniques.
 #+LABEL: tab:comparison
-|----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
+|----------------------{------+------------------------------+-------------------------------------+--------------+----------------------------|
 | Technique                  | Minimum Estimated Cost (USD) | Accuracy (relative error)           | Ease of Use  | Range                      |
 |----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
 |----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
-| Stereo Video               | \$4600\nbsp\cite{SeaGIS}         | $2.5\%$\nbsp\cite{Harvey2001}           | Intermediate | $2-10m$\nbsp\cite{Mallet2014}  |
+| Stereo Video               | 4600\nbsp\cite{SeaGIS}           | 2.5%\nbsp\cite{Harvey2001}              | Intermediate | 2-10m\nbsp\cite{Mallet2014}    |
 |----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
-| Laser Caliper              | \$600\nbsp\cite{BERGERON2007}    | $12\%$\nbsp\cite{Stock2021}             | Intermediate | $2-5m$\nbsp\cite{Stock2021}    |
+| Laser Caliper              | 600\nbsp\cite{BERGERON2007}      | 12%\nbsp\cite{Stock2021}                | Intermediate | 2-5m\nbsp\cite{Stock2021}      |
 |----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
-| Acoustic Methods           | \$20k\nbsp\cite{Mueller2006}     | $1.1\% - 35.2\%$\nbsp\cite{Mueller2006} | Hard         | $1-16m$\nbsp\cite{Mueller2006} |
+| Acoustic Methods           | 20k\nbsp\cite{Mueller2006}       | 1.1% - 35.2%\nbsp\cite{Mueller2006}     | Hard         | 1-16m\nbsp\cite{Mueller2006}   |
 |----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
-| Triangulation Rangefinding | \$1200                       | $15\%$                              | Easy         | $2-5m$                     |
+| Triangulation Rangefinding | 1200                         | 15%                                 | Easy         | 2-5m                       |
 |----------------------------+------------------------------+-------------------------------------+--------------+----------------------------|
 
 A standard method for collecting fish length measurements uses stereo video
@@ -254,6 +255,16 @@ produced, rendering species identification impossible. Traditional camera
 calibration procedures are also difficult to do underwater, if not
 impossible\nbsp\cite{Wong2022}. We concluded that until we are able to model Snell's
 law distortions, a stereo camera approach would be impossible.
+
+*** Underwater Photography
+**** Notes :noexport:
+Tie in Leica article, costs of underwater housings
+
+something like: The cost of underwater equipment has decreased significantly
+since the beginnings of scientific diving, which opens an entirely new avenue
+for data collection. Underwater camera housings alone could cost upwards of
+$2000 (adjusted for inflation), while the current proposed system only costs
+about 1200.
 
 * Implementation Details
 The following chapter contains material from a previously published work.
@@ -563,7 +574,7 @@ Once again assuming we have $n$ images with image $i$ corresponding with laser
 dot point $p_i$, a straightforward method to get our laser trajectory $\alpha$ can be
 obtained from a normed average over the differences between all points:
 \[
-        \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neqi}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
+        \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neq i}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
 \]
 
 This can be flipped as necessary to face the direction in which the laser beam
@@ -591,7 +602,6 @@ add pieces of duct tape in an arbitrary pattern on one side to make the slate
 more featureful. We also make the assumption that the slate remains close to
 parallel with the image plane.
 
-
 ** Software
 In order to obtain length measurements from the captured images, we use a custom
 software pipeline to extract the necessary features to measure length. Algorithm
@@ -607,11 +617,11 @@ we plan to move this to a Rust codebase.
 \Require Image $I$, camera matrix $K$, laser parameters $\alpha$ and $\ell$
 \State $I_R \gets \text{rectify}(I, K)$
 \If{$\text{not laserInImage}(I_R)$} \\
-    \COMMENT{Reject image.}
+    Reject image.
 \EndIf
 \State $_{}P_{\text{laser} }\gets \text{getLaserDot}(I_R)$
 \If{$\text{not fishInImage}(I_R)$} \\
-    \COMMENT{Reject image.}
+    Reject image.
 \EndIf
 \State $P_{\text{head}},P_{\text{tail}} \gets \text{getHeadTail}(I_R)$
 \State $L \gets \text{getFishLength}(I_R, P_{\text{head}}, P_{\text{tail}}, P_{\text{laser}})$ \\
@@ -658,7 +668,38 @@ Figure \ref{fig:fred}.
 
 *** Laser Calibration Algorithm Accuracy
 *** Laser Attenuation Testing
+Figure\nbsp\ref{} shows the two laser dots side by side in clear water at a distance
+of ??m. The red laser is barely visible, while the green laser is still very bright. 
 *** Robustness to Tilt
+To evaluate the system's accuracy with respect to different tilt angles, we had
+the following experiment setup. We captured a total of 183 images of a
+checkerboard pattern with the laser dot on it, with varying tilt angles and
+depths. A subset of these images were used to obtain the laser position and
+orientation. We obtained the distance to the checkerboard using the position of
+the laser dot as described in Section\nbsp\ref{sec:distance-determination}, and the
+tilt angle of the board was extracted from its pose as described in
+Section\nbsp\ref{sec:point-triangulation}. Using this data, from each image we
+extracted 13 lengths, as shown in
+Figure\nbsp\ref{fig:checkerboard-experiment-setup}.
+Figures\nbsp\ref{fig:checkerboard-errors-by-length} and
+\ref{fig:checkerboard-errors-by-distance} shows the results of this experiment.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Percent error of all distances and angles, grouped by true object length.
+#+LABEL: fig:checkerboard-errors-by-length
+[[file:images/checkerboard_errors_by_length.png]]
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Percent error of length measurements over all distances and angles, plotted over the distance from the camera each image was taken.
+#+LABEL: fig:checkerboard-errors-by-distance
+[[file:images/checkerboard_errors_by_distance.png]]
+
+Both figures show that the relative error in measurement decreases dramatically
+when the angle becomes lower than 15 degrees, which supports previous studies
+\cite{Heppell2012}. Since our system is diver operated, we expect the vast
+majority of images taken will fit this criteria.
 *** Annotations                                                    :noexport:
  - the fake fish length measurement
  - the checkerboard measurement
@@ -701,11 +742,30 @@ Anchor stuck, Fred was secured to anchor before ascent. Fred lost when anchor wa
 We thank Fred for his service.
 
 ** REEF Deployment
+The Reef Environmental Education Foundation (REEF) is an organization affiliated with
+the Semmens Lab. In August 2023, we deployed six of our Fishsense Lite
+units to be tested by REEF staff in the Florida Keys.
+*** Annotations                                                    :noexport:
 REEF helps Brice do population studies
 Brice reached out to Fishsense to help develop camera, REEF provided funding through NOAA
 
+I would like more context about the connection between REEF and the Semmens Lab.
+These are questions I can ask when I meet them next week.
+
+Specific list of questions:
+- What drove REEF and the Semmens Lab to collaborate?
+- What was the procedure? How often were these units used during deployment?
+- What was the goal for deploying these units?
+- Jen: Can I get that chi-squared graph?
+
 *** Procedure
 *** User Experience
+Divers have said the following about using the Fishsense Lite modules:
+- Generally the devices are ``fun and easy to use''
+- They take 1-2 dives to get used to
+
+Our biggest issues with the hardware are those of durability -- with prolonged
+use, we found that laser points would leak, and laser mounts would crack. 
 *** Findings
 
 * Backmatter :ignore:
