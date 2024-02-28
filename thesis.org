@@ -11,11 +11,9 @@
 * Frontmatter :ignore:
 #+LATEX: \makecopyright
 #+LATEX: \makesignature
-
 #+BEGIN_dedication
 To Kat, my friends, and my family.
 #+END_dedication
-
 #+BEGIN_epigraph
 #+ATTR_LATEX: :latexcode \vskip0.5pt plus.5fil \setsinglespacing
 #+BEGIN_VERSE
@@ -28,9 +26,9 @@ Say! What a lot of fish there are.
 #+ATTR_LATEX: :latexcode \vskip\baselineskip
 /Dr. Seuss/
 #+END_epigraph
-
 #+LATEX: \tableofcontents
-
+#+LATEX: \listoffigures
+#+LATEX: \listoftables
 #+BEGIN_acknowledgements
 This project would not have been possible without the many hands available to
 help us throughout these past couple of years.
@@ -46,7 +44,7 @@ you to Nathan Hui, whose stern engineering and management advice was vital to us
 making it this far. Thank you to all undergraduates who have worked with the
 Fishsense project: Vivaswat Suresh, Raghav Maddukuri, Avik Ghosh, Allen Kan, Ana
 Perez, Hamish Grant, Harish Vasanth, Shaurya Raswan, Kyle Tran, Sam Prestrelski,
-and Jennifer Xu. Thank you also to the REU students who helped us gather
+Adrian Zugehar, and Jennifer Xu. Thank you also to the REU students who helped us gather
 valuable data despite unreasonably short notice: Josie Dominguez, Jordan
 Reichhart, Ela Lucas, and Nick Reyes.
 
@@ -83,8 +81,7 @@ Finally, thank you to my parents, whose continuous support has allowed the
 opportunity to do all of this.
 
 #+END_acknowledgements
-
-* Abstract :ignore:
+* Abstract                                                           :ignore:
 #+BEGIN_dissertationabstract
 Fish length is a crucial metric to evaluate the health of fish populations.
 Current methods most commonly rely on roving diver surveys, where divers
@@ -126,18 +123,17 @@ species and their lengths, are one such approach, though humans are only capable
 of estimating to within 20% of a fish's true length \cite{Harvey2001}. This skill also
 requires retraining as frequent as once every 6 months \cite{Bell1985}.
 
-This work presents a collaboration with the Semmens Lab and REEF: a device that
-can be used by any recreational diver made from off-the-shelf components, that
-produces estimations more accurately than a human being can. Dubbed Fishsense
-Lite, this device incorporates laser triangulation techniques to allow divers to
-take images of a fish and use them to estimate fish length.
+This work presents a collaboration with the Semmens Lab and the Reef
+Environmental Education Foundation (REEF): a device that can be used by any
+recreational diver made from off-the-shelf components, that produces estimations
+more accurately than a human being can. Dubbed Fishsense Lite, this device
+incorporates laser triangulation techniques to allow divers to take images of a
+fish and use them to estimate fish length.
 
 ** Problem Specification
 This work will target the Fishsense Lite - the device that consists of the laser
 triangulation technique as well as the software to process images taken by the
-physical device. This is presented as a solution to object measurement. The
-implications of the accuracy bounds of this type of solution will be detailed in
-a later section.
+physical device. 
 
 The length measurement algorithm makes the following assumptions about the
 object of interest:
@@ -159,12 +155,10 @@ that can cause major inaccuracies in depth estimation\nbsp
 \cite{Agrawal2012,Luczynski2017}, though work on investigating solutions to
 these problems is ongoing and is outside of the scope of this work.
 
-In situations where higher accuracy is required, such as construction, this
-particular device may not be ideal.
-
+Since our solution is constrained to citizen scientists, we will only be
+comparing against other handheld systems and manual visual estimation, and will
+not be considering passive data collection methods.
 ** Related Work
-I consulted works in several different domains during the construction of this
-project. These domains will be detailed in this section.
 *** Underwater Ranging
 #+ATTR_LATEX: :float sideways :align |c||c|c|c|c| :width 70%
 #+CAPTION: Comparison of different underwater ranging techniques.
@@ -256,20 +250,9 @@ calibration procedures are also difficult to do underwater, if not
 impossible\nbsp\cite{Wong2022}. We concluded that until we are able to model Snell's
 law distortions, a stereo camera approach would be impossible.
 
-*** Underwater Photography
-**** Notes :noexport:
-Tie in Leica article, costs of underwater housings
-
-something like: The cost of underwater equipment has decreased significantly
-since the beginnings of scientific diving, which opens an entirely new avenue
-for data collection. Underwater camera housings alone could cost upwards of
-$2000 (adjusted for inflation), while the current proposed system only costs
-about 1200.
-
 * Implementation Details
+** Preamble :ignore:
 The following chapter contains material from a previously published work.
-** Annotations :noexport:
-Acknowledge the Mobisys paper when it gets published
 ** System Description
 The current Fishsense Lite system has two main components: the physical image
 taking device combined with a laser pointer, and software that processes the
@@ -298,6 +281,7 @@ cases where the viewfinder is too dim to see the image being taken.
 After a dive or a series of dives, the diver can then upload the data to an
 automated software pipeline that calculates the fish length.
 ** Hardware
+*** Overview :ignore:
 The device used to take the fish images must fit the following assumptions:
 1. The system must have an imager that images can be extracted from.
 2. The imager must be able to be modeled using the pinhole camera model.
@@ -337,22 +321,27 @@ not have to worry about these effects.
 **** Annotations :noexport:
 Ask Adrian if it's ok to include his work here.
 *** Laser Pointer
-So far we have experimented with two main laser pointer models: the ?? and the
-??. Both lasers are rated for less than 5mW of power. The former model emits
-light at 700nm, and the latter at 532nm.
+The bulk of our experiments have been with two main laser pointer models: the
+Innovative Scuba Concepts laser
+pointer\footnote{https://dealer.innovativescuba.com/tc-101-aluminum-underwater-laser-pointer.html},
+and the Shark
+Laser\footnote{https://waterprooflaser.com/contents/en-us/d22\_TO-ORDER.html}}.
+Both lasers are rated for less than 5mW of power. The former model emits light
+at 700nm, and the latter at 532nm.
 
 During testing, we discovered two significant factors that influenced our
 decision to used one over the other.
 
 The first is attenuation - within the visible spectrum, water attenuates light
 with longer wavelengths significantly more than shorter wavelengths, and so red
-light is more difficult to see at greater distances\nbsp\cite{}. From our testing,
+light is more difficult to see at greater distances. From our testing,
 we found that the red laser became incredibly difficult to spot at around 5m.
 
 The second is fish behavior - from tests with real fish, divers have observed
 that fish tend to avoid the green laser. Our main hypothesis for why this occurs
 is that fish are able to see green light far better than red.
 ** Laser Triangulation
+*** Overview :ignore:
 Knowing the laser's exact position and orientation is paramount to keeping
 measured lengths as accurate as possible. However, due to manufacturing defects
 or perturbation during transit, the position of the laser will shift by small
@@ -485,8 +474,7 @@ We then trivially obtain $p$ from $p = \lambda_2v$.
 *** Inverse Problem (Calibration)
 Here we assume that $\alpha$ and $\ell$ are unknown, but we have $n$ images from which
 we obtain laser points $p_i$. Here I describe two possible algorithms to solve
-this. A comparison of the two methods is presented in [[* Pool Testing]].
-
+this. A comparison of the two methods is presented in Section\nbsp[[sec:pool-testing]].
 **** Hu
 We leverage the fact that the parameterized laser beam must intersect with
 the laser dot point to give us the following series of equations:
@@ -583,6 +571,7 @@ our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with
 $xy$ plane to be $\ell$.
 
 *** Laser Calibration Procedures
+<<sec:laser-calibration-procedures>>
 Since our laser mount is not stable enough to guarantee that laser parameters
 stay consistent between dives, we require a laser calibration at the beginning
 of every dive. To do this, we assume that we know the optical frame coordinates
@@ -597,12 +586,34 @@ However, in the field, requiring that divers carry a large and heavy
 checkerboard for every dive is a large ask.
 
 We have developed a procedure that does not utilize a checkerboard, and can
-instead be done with a dive slate -- something that most divers will carry. We
-add pieces of duct tape in an arbitrary pattern on one side to make the slate
-more featureful. We also make the assumption that the slate remains close to
-parallel with the image plane.
+instead be done with a dive slate -- something that most divers will carry. An
+example of one of these is shown in Figure\nbsp\ref{fig:slate-calibration}. We add pieces of duct tape in
+an arbitrary pattern on one side to make the slate more featureful. We also make
+the assumption that the slate remains close to parallel with the image plane.
+
+#+ATTR_LATEX: :scale 0.4
+#+ATTR_ORG: :width 200px
+#+CAPTION: An example of a slate calibration image.
+#+label: fig:slate-calibration
+[[file:images/slate-calibration.JPG]]
+
+We assume that we have a scanned copy of the dive slate, and hence the physical
+measurements of the duct tape pattern.
+
+We perform the following steps:
+1. Get the largest contour on the slate scan
+2. Get the most similar shape on the calibration image
+3. Fit an ellipse to the slate contour, match this with the calibration contour to find rotation and scale
+4. Find the center of masses of both contours and use the difference to obtain translation
+5. Combine scale, rotation and translation to get a 2D transform
+6. Take contour, use transform to get corresponding points in calibration image
+7. Use these points correspondences to obtain a 3D transformation using solvePnP
+
+Results demonstrating this method compared to the checkerboard are shown in
+section\nbsp[[sec:field-calibration-testing]].
 
 ** Software
+*** Overview :ignore:
 In order to obtain length measurements from the captured images, we use a custom
 software pipeline to extract the necessary features to measure length. Algorithm
 \ref{alg:pipeline} shows a summary of the pipeline.
@@ -633,26 +644,96 @@ All calculations relating to image projection rely on pinhole camera model
 assumptions. In order to ensure that images fit this assumption, we rely on the
 camera matrix $K$ obtained in the calibration process, as well as lens
 distortion parameters. This is currently accomplished using OpenCV's standard
-camera model, with it's built in calibrateCamera function.
+camera model, which contains a calibration camera matrix and a six-degree
+polynomial to account for lens distortions.
 *** Raw Processing
-Figure \ref{} and \ref{} show a raw image compared with a JPEG from the same
-camera - we can observe that our camera performs some distortion correction. To
-ensure that we have full control over the entire image processing pipeline, we
-begin our operation on purely the raw images. The most important component of
-this stage is color correction, as correcting the raw image in a certain way may
-make the laser dot easier to spot.
-**** Annotations :noexport:
+Figure\nbsp\ref{fig:jpg-vs-png} shows a raw image compared with a JPEG from the same camera - we
+can observe that the bottom of the pool in the raw image is slightly curved
+whereas it is straight in the JPEG, implying that the camera does its own
+distortion correction internally. To ensure that we have full control over the
+entire image processing pipeline, we begin our operation on purely the raw
+images. The most important component of this stage is color correction, as
+correcting the raw image in the right way will make the laser dot much easier to identify.
+
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/camera-jpg}
+  \caption{Example JPEG image processed by the camera's internal software. }
+  \label{fig:jpg-example}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/camera-png-unrectified}
+  \caption{The same image }
+  \label{fig:png-example}
+\end{subfigure}
+\caption{Comparison of the same image with onboard camera processing versus our custom processing.}
+\label{fig:jpg-vs-png}
+\end{figure}
+**** Annotations                                                   :noexport:
 Ask Hamish about whether it's ok to include his work in here and credit him
 *** Field Calibration
+Here we implement the field calibration procedure detailed in
+Section\nbsp[[sec:laser-calibration-procedures]].
 *** Automatic Laser Detection
+We chose to use a neural network to find the location of the laser, as over the
+course of many pool tests and deployments, we gathered a large enough number of
+hand-labeled laser dot images to be able to train such a model.
+
+We chose a binary classification model which classified 20x20 tiles in a given
+image as either containing the laser or not. Training data was generated on 326
+images and testing data on 24 unique images. 225 tiles with lasers at varying
+points within each tile were created per image, resulting in 73350 tiles. 439300
+tiles without the laser were also created by extracting tiles from images in
+steps of 85 pixels horizontally and vertically, while avoiding areas of said
+images that contained a laser dot. Our network consists of a single
+convolutional layer, a single average pooling layer, and two linear layers,
+trained for 469 epochs. We are able to achieve 99\% accuracy on test data.
+
+To reduce the number of potential tiles, we looked for all the local maximums
+within an image, then select a 20x20 region around it. Due to the limited amount
+of training images given to the model, many non-laser tiles were classified as
+laser. However, we are able to constrain possible laser locations to a line in
+the image using a mask derived from the laser parameters. The point closest to
+the vanishing point was determined to be the laser.
+
+Performance metrics of the model are shown in
+Table\nbsp\ref{tab:laser-model-metrics}. Because most training data was taken from
+pool images, the model trained on pool data performed very well. The one false
+positive detected in the pool data was another point on the fish, so length
+detection would work just fine. The ocean data had many false negatives, which
+was deliberate - it is much better for our model to have high precision than it
+is to have high recall because a falsely detected laser generates a wildly
+incorrect fish length. On the other hand, because we are taking multiple images
+of each fish, if a few of those images have lasers that are not detected, these
+can simply be discarded.
+
+#+ATTR_LATEX:  :align |c||c|c|c| :width 70%
+#+CAPTION: Performance metrics for our laser detection model.
+#+LABEL: tab:laser-model-metrics
+|---------------+-------------+----------+-------|
+| *Data Source* | *Precision* | *Recall* |  *F1* |
+|---------------+-------------+----------+-------|
+|---------------+-------------+----------+-------|
+| Pool          |       0.996 |    0.981 | 0.989 |
+|---------------+-------------+----------+-------|
+| Ocean         |       0.986 |    0.861 | 0.919 |
+|---------------+-------------+----------+-------|
+
+
 **** Annotations :noexport:
 Ask Viva for permission to include his work in here and make sure to credit him
 *** Fish Segmentation
+
+
 **** Annotations :noexport:
 Ask Kyle Tran about whether it's ok to include his work in here and credit him
 
 * Testing
 ** Pool Testing
+<<sec:pool-testing>>
 Many of our tests involved measuring a reference object. In order to fully
 simulate the purpose for which the device was intended, we use a fake rainbow
 trout. Each dummy is made from the same model, though different techniques have
@@ -667,9 +748,12 @@ Figure \ref{fig:fred}.
 [[file:images/fred.jpg]]
 
 *** Laser Calibration Algorithm Accuracy
+*** Field Calibration Procedure Testing
+<<sec:field-calibration-testing>>
 *** Laser Attenuation Testing
 Figure\nbsp\ref{} shows the two laser dots side by side in clear water at a distance
 of ??m. The red laser is barely visible, while the green laser is still very bright. 
+
 *** Robustness to Tilt
 To evaluate the system's accuracy with respect to different tilt angles, we had
 the following experiment setup. We captured a total of 183 images of a
@@ -700,6 +784,7 @@ Both figures show that the relative error in measurement decreases dramatically
 when the angle becomes lower than 15 degrees, which supports previous studies
 \cite{Heppell2012}. Since our system is diver operated, we expect the vast
 majority of images taken will fit this criteria.
+*** Larger Objects
 *** Annotations                                                    :noexport:
  - the fake fish length measurement
  - the checkerboard measurement
@@ -715,6 +800,12 @@ our system would fare in low visibility conditions. The main goal of this test
 was to evaluate the red and green lasers, looking both at attenuation and how
 fish would react.
 
+This was Fred's final test. According to our recorded logs, we know the following:
+#+BEGIN_QUOTE
+``Anchor stuck, Fred was secured to anchor before ascent. Fred lost when anchor was retrieved.''
+#+END_QUOTE
+We thank Fred for his service.
+
 *** Procedure
 Two devices, FSL-N and FSL-01, were used during this test. FSL-N was fitted with
 the green laser, and FSL-01 with the red.
@@ -726,20 +817,12 @@ images in the same area. Divers did not take images of the same individuals.
 
 *** Findings
 Unsurprisingly, we found that the red laser attenuated much more than the green
-laser.
+laser. Particles in the water also affected this, as the light would scatter off
+and render the laser beam visible.
 
 One other interesting result was related to the change in salinity between pool
 water and sea water. Length measurements obtained in salt water were generally
 higher than length measurements obtained in pool water.
-
-**** Attenuation
-**** Fish Behavior
-**** Effect of Salinity
-This was Fred's final test. According to our recorded logs, we know the following:
-#+BEGIN_QUOTE
-Anchor stuck, Fred was secured to anchor before ascent. Fred lost when anchor was retrieved.
-#+END_QUOTE
-We thank Fred for his service.
 
 ** REEF Deployment
 The Reef Environmental Education Foundation (REEF) is an organization affiliated with
@@ -754,7 +837,8 @@ These are questions I can ask when I meet them next week.
 
 Specific list of questions:
 - What drove REEF and the Semmens Lab to collaborate?
-- What was the procedure? How often were these units used during deployment?
+- What procedure did the divers follow? How long was each dive? 
+- How many dives over what time period did we do?
 - What was the goal for deploying these units?
 - Jen: Can I get that chi-squared graph?
 
@@ -765,10 +849,9 @@ Divers have said the following about using the Fishsense Lite modules:
 - They take 1-2 dives to get used to
 
 Our biggest issues with the hardware are those of durability -- with prolonged
-use, we found that laser points would leak, and laser mounts would crack. 
+use, we found that laser points would leak, and laser mounts would crack.
 *** Findings
-
-* Backmatter :ignore:
+* Backmatter                                                         :ignore:
 \bibliographystyle{plain}
 \bibliography{fishsense}
 * Problem Motivation                                               :noexport:

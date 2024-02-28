@@ -15,4 +15,5 @@
 #+LATEX_HEADER: \usepackage{pdflscape}
 #+LATEX_HEADER: \usepackage{tikz}
 #+LATEX_HEADER: \usepackage{rotating}
+#+LATEX_HEADER: \usepackage{subcaption}
 #+LATEX_HEADER: \increasemargins{.1in}
