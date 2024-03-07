@@ -260,6 +260,9 @@ calibration procedures are also difficult to do underwater, if not
 impossible\nbsp\cite{Wong2022}. We concluded that until we are able to model Snell's
 law distortions, a stereo camera approach would be impossible.
 
+*** Laser Rangefinding
+While the technology we use here is novel to fish length measurement, it has
+been used for a wide variety of other purposes.
 * Implementation Details
 ** Preamble :ignore:
 The following chapter contains material from a previously published work.
@@ -275,9 +278,15 @@ Prior to deploying this device in the field, calibration procedures must be
 performed to maximize the accuracy of the obtained measurements.
 **** Offline Procedures
 ***** Camera Calibration
-The internal parameters of the camera must be calibrated in water. This is
-currently achieved using Zhang's method \nbsp\cite{Zhang2000}, and is performed in a
-swimming pool.
+The internal parameters of the camera must be calibrated in water. These
+parameters include the camera's calibration matrix $K$, as well as lens
+distortion coefficients $d$. This is currently achieved using Zhang's method
+\nbsp\cite{Zhang2000}, which is to take many images of a checkerboard pattern, and
+optimize the aforementioned parameters such that the checkerboard corners
+reflect the structure of the checkerboard (lines remain straight).
+
+This is performed in a swimming pool prior to any field deployments, and only
+needs to be performed once in the device's lifetime.
 
 ***** Laser Calibration
 The precise position and orientation of the laser beam must also be estimated.
@@ -285,6 +294,7 @@ Currently we do this by using a flat object with known features -- a dive slate
 with duct tape on it, in our case. Multiple images of this flat object must be
 taken with the laser dot on it in order to estimate the laser beam's parameters.
 
+The procedure to obtain these parameters is described in [[sec:laser-calibration]].
 **** Online Procedures
 When in use, the diver points the laser pointer towards a fish and takes a
 picture. The laser dot is generally in parallel with the camera, so it acts a
@@ -294,7 +304,10 @@ cases where the viewfinder is too dim to see the image being taken.
 After a dive or a series of dives, the diver can then upload the data to an
 automated software pipeline that calculates the fish length. The mechanism of
 transfer is still a work in progress -- currently it exists as a series of
-Python scripts that must be run sequentially, though
+Python scripts that must be run sequentially, though current work is being done
+to both transfer it to a Rust codebase for speed, and construct a web
+application in order for this software pipeline to become more easily
+accessible.
 ** Hardware
 *** Overview :ignore:
 The device used to take the fish images must fit the following assumptions:
@@ -318,12 +331,19 @@ below.
 For our own testing, we use an Olympus TG6, a common camera for divers to own
 for underwater photography. This camera itself is waterproof, though we use
 another protective housing around it.
+
+This is just one example of a camera that can be used for this system --
+theoretically any camera would work.
 **** Wide Angle Lens
-To fit assumption 2, we must have some way to rectify images taken by the
-camera. Distortions from Snell's law make this impossible using the standard
-camera model\nbsp\ref{Agrawal2012}, so we add a corrective optic in order to correct
-these distortions. Future work is required for us to understand how to model
-these distortions better so we can ultimately remove this.
+To fit our pinhole camera assumption, we must have some way to rectify images
+taken by the camera. Distortions from Snell's law make this impossible using the
+standard camera model\nbsp\ref{Agrawal2012}.
+
+We add a corrective optic in order to correct these distortions. Developed by
+Backscatter, this corrective optic is designed to attach to the Olympus's
+underwater housing, and is typically used to widen the field of view for
+underwater photographers. Future work is required for us to understand how to
+model these Snell's law distortions better so we can ultimately remove it.
 **** Annotations :noexport:
 resolution requirements
 rectified image assumption
@@ -508,6 +528,7 @@ solution exists:
 
 We then trivially obtain $p$ from $p = \lambda_2v$.
 *** Inverse Problem (Calibration)
+<<sec:laser-calibration>>
 Here we assume that $\alpha$ and $\ell$ are unknown, but we have $n$ images from which
 we obtain laser points $p_i$. Here I describe two possible algorithms to solve
 this. A comparison of the two methods is presented in Section\nbsp[[sec:math-testing]].
@@ -575,7 +596,8 @@ There are many other methods of this kind that we could have used, such as the
 Levenberg-Marquardt algorithm, though from our experiments this calibration
 method has been sufficient.
 
-The Jacobian of $\mathbf{g}(x)$ is given by the following:
+The Jacobian of $\mathbf{g}(x)$ is given by the following, and the full
+derivation is detailed in Section\nbsp[[sec:jacobian-derivation]]:
 
 \begin{align}
 J_g &= \begin{bmatrix}
@@ -592,6 +614,49 @@ J_{g\ell}^i &= \begin{bmatrix}
 \end{bmatrix}
 \left(I_{3\times3} - \alpha\frac{(p_i - \ell)^T}{\lVert p_i - \ell\rVert }\right) \in \mathbb{R}^{3\times2}
 \end{align}
+
+***** Derivation of Jacobian
+<<sec:jacobian-derivation>>
+Recall the function $\vb{g}(\alpha,\ell)$:
+\begin{equation*}
+    \vb{g}(\alpha,\ell) = \begin{bmatrix}
+        \lVert p_1 - \ell\rVert\alpha + \ell \\
+        \lVert p_2 - \ell\rVert\alpha + \ell \\
+        \vdots \\
+        \lVert p_n - \ell\rVert\alpha + \ell
+   \end{bmatrix},
+\end{equation*}
+where $p_i$ is the laser dot in optical coordinates from calibration image $i$.
+
+We can split $J_g$ into two block columns representing the Jacobians with respect to different vectors:
+\begin{equation*}
+    J_g = \begin{bmatrix}
+        J_{g\alpha} & J_{g\ell}
+    \end{bmatrix}
+\end{equation*}
+Calculating $J_{g\alpha}$ is fairly trivial, as the function is linear in $\alpha$:
+\begin{equation*}
+    J_{g\alpha} = \begin{bmatrix}
+        \lVert p_1 - \ell\rVert I \\
+        \lVert p_2 - \ell\rVert I \\
+        \vdots \\
+        \lVert p_n - \ell\rVert I
+    \end{bmatrix}
+\end{equation*}
+
+We can take the Jacobian with respect to $\ell$ by taking the Jacobians of each row individually. For a particular image $i$ we have:
+\begin{align*}
+    \vb{g}_i(\alpha,\ell) &= \lVert p_i - \ell \rVert \alpha + \ell \\
+    \frac{\partial}{\partial\ell}\vb{g}_i(\alpha,\ell) &= -\frac{1}{\lVert p_i - \ell\rVert}\left[\begin{smallmatrix}
+        (p_x - \ell_x)\alpha_x+1 & (p_y - \ell_y)\alpha_x & (p_z - \ell_z)\alpha_x \\(p_x - \ell_x)\alpha_y & (p_y - \ell_y)\alpha_y + 1 & (p_z - \ell_z)\alpha_y \\p_x - \ell_x)\alpha_z & (p_y - \ell_y)\alpha_z & (p_z - \ell_z)\alpha_z + 1
+    \end{smallmatrix}\right] \\
+        &= I - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T
+\end{align*}
+
+We only want the first two columns of this, so we get
+\begin{equation*}
+    J^i_{g\ell} =  \begin{bmatrix} I_{2\times 2} \\ 0\end{bmatrix}(I_{3\times3} - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T) \in \mathbb{R}^{3\times 2}
+\end{equation*}
 
 **** Atanasov
 Once again assuming we have $n$ images with image $i$ corresponding with laser
@@ -640,13 +705,14 @@ distortion parameters. This is currently accomplished using OpenCV's standard
 camera model, which contains a calibration camera matrix and a six-degree
 polynomial to account for lens distortions.
 *** Raw Processing
-Figure\nbsp\ref{fig:jpg-vs-png} shows a raw image compared with a JPEG from the same camera - we
-can observe that the bottom of the pool in the raw image is slightly curved
-whereas it is straight in the JPEG, implying that the camera does its own
+Figure\nbsp\ref{fig:jpg-vs-png} shows a raw image compared with a JPEG from the same
+camera -- we can observe that the bottom of the pool in the raw image is slightly
+curved whereas it is straight in the JPEG, implying that the camera does its own
 distortion correction internally. To ensure that we have full control over the
 entire image processing pipeline, we begin our operation on purely the raw
-images. The most important component of this stage is color correction, as
-correcting the raw image in the right way will make the laser dot much easier to identify.
+images. This also gives us control over color correction, which is advantageous
+for us, as we can color correct the image in such a way that makes the laser
+easier to detect.
 
 \begin{figure}
 \centering
@@ -665,7 +731,7 @@ correcting the raw image in the right way will make the laser dot much easier to
 \caption{Comparison of the same image with onboard camera processing versus our custom processing.}
 \label{fig:jpg-vs-png}
 \end{figure}
-**** Annotations                                                   :noexport:
+**** Annotations :noexport:
 Ask Hamish about whether it's ok to include his work in here and credit him
 *** Laser Calibration
 Since our laser mount is not stable enough to guarantee that laser parameters
@@ -694,9 +760,7 @@ the assumption that the slate remains close to parallel with the image plane.
 [[file:images/slate-calibration.JPG]]
 
 We assume that we have a scanned copy of the dive slate, and hence the physical
-measurements of the duct tape pattern.
-
-We perform the following steps:
+measurements of the duct tape pattern. We perform the following steps:
 1. Get the largest contour on the slate scan
 2. Get the most similar shape on the calibration image
 3. Fit an ellipse to the slate contour, match this with the calibration contour to find rotation and scale
@@ -802,13 +866,14 @@ points with two dots to show the head and tail location of the fish.
 **** Annotations :noexport:
 Ask Kyle Tran about whether it's ok to include his work in here and credit him
 
+** Acknowledgements
+The author would like to thank Christopher Crutchfield, Ana Perez, Hamish Grant,
+Viva Suresh, and Kyle Tran for contribution work described in this section.
 * Testing
 ** Locations
 The data in this section were gathered from three locations, listed below.
 *** Canyonview Pool
-The vast majority of our data comes from Canyonview pool. The following is a
-list of test dates along with a summary of what was done:
--
+The vast majority of our data comes from Canyonview pool.
 **** Note :noexport:
 list of tests should go in an appendix
 *** La Jolla Kelp Forests
@@ -837,28 +902,32 @@ This was Fred's final test. According to our recorded logs, we know the followin
 We thank Fred for his service.
 
 *** REEF Florida Keys Deployment
-The Reef Environmental Education Foundation (REEF) is an organization affiliated with
-the Semmens Lab. In August 2023, we deployed six of our Fishsense Lite
+The Reef Environmental Education Foundation (REEF) is an organization affiliated
+with the Semmens Lab. In August 2023, we deployed six of our Fishsense Lite
 units (FSL-01 to FSL-06) to be tested by REEF staff in the Florida Keys.
+
+The water conditions in this region were much clearer than in the La Jolla Kelp
+forests, so despite the shorter attenuation of red lasers, the data from this
+test are predominantly generated using red lasers.
 
 Standard roving diver surveys were conducted in ??? different areas. On all
 dives, a Fishsense Lite camera unit, along with a stereo Go Pro pair, were used
-to measure fish lengths. These measurements are compared with each other in
-Figure\nbsp\ref{}.
+to measure fish lengths.
 ** Tests
 *** Overall Accuracy
 To measure the accuracy of this system, we rely on the accuracy of length
 measurements obtained, since we are unable to rely on the true position and
 orientation of the laser. In particular, we use relative length, as our sensor
 is image-based, and errors would therefore occur in relation to the object's
-apparent size, which is depth dependent.
+apparent size, which is depth dependent. The key assumption which we rely on is
+that the size of the object is irrelevant, as we only care about the apparent
+size in the image.
 
-To test this, we measure a reference object. In order to fully simulate the
-purpose for which the device was intended, we use a fake rainbow trout. Each
-dummy is made from the same model, though different techniques have been used to
-make them negatively buoyant. Three generations of dummy fish, named Fred,
-George, and Ginny, have been used for these tests. Fred is shown in Figure
-\ref{fig:fred}.
+In order to fully simulate the purpose for which the device was intended, we use
+a dummy rainbow trout as a reference object. Each dummy is made from the same
+model, though different techniques have been used to make them negatively
+buoyant. Three generations of dummy fish, named Fred, George, and Ginny, have
+been used for these tests. Fred is shown in Figure \ref{fig:fred}.
 
 #+ATTR_LATEX: :scale 0.1
 #+ATTR_ORG: :width 200px
@@ -866,27 +935,22 @@ George, and Ginny, have been used for these tests. Fred is shown in Figure
 #+LABEL: fig:fred
 [[file:images/fred.jpg]]
 
+Figure\nbsp\ref{} demonstrates measurements of our fake fish, in this case, Fred,
+during a pool test. We can see that with varying distances away from Fred, the
+estimate remains relatively consistent, and we always underestimate Fred's
+length.
+
+**** Object Thickness
+Fred, and other fishes we measure, have some thickness. Therefore, if the laser
+dot is in the middle of the fish, the laser dot point is at a different depth
+than the snout and fork points. We know that Fred is approximately 8cm thick at
+his thickest point, so we can adjust for this. Figure\nbsp\ref{} shows the adjusted
+length measurements, and we can see that they line up almost perfectly.
+
 *** Field Calibration Accuracy
 <<sec:field-calibration-testing>>
 *** Different Calibration Procedures
 <<sec:math-testing>>
-*** Different Lasers
-<<sec:laser-comparison>>
-We discovered two significant factors that influenced our decision to use one
-laser over the other.
-
-The first was attenuation - within the visible spectrum, water attenuates light
-with longer wavelengths significantly more than shorter wavelengths, and so red
-light is more difficult to see at greater distances. From our testing,
-we found that the red laser became incredibly difficult to spot at around 5m.
-Figure\nbsp\ref{} shows the two laser dots side by side in clear water at a distance
-of ??m. The red laser is barely visible, while the green laser is still very bright.
-
-
-The second was fish behavior - from tests with real fish, divers have observed
-that fish tended to avoid the green laser. Our main hypothesis for why this
-occurs is that fish are able to see green light far better than red.
-
 *** Effects of Freshwater Versus Saltwater
 Unsurprisingly, we found that the red laser attenuated much more than the green
 laser. Particles in the water also affected this, as the light would scatter off
@@ -901,6 +965,33 @@ higher than length measurements obtained in pool water.
 #+CAPTION: A male California Sheephead from the La Jolla Kelp Beds. Note the ``lightsaber'' effect caused by particulates in the water.
 #+LABEL: fig:sheephead
 [[file:images/sheephead.JPG]]
+*** Different Lasers
+<<sec:laser-comparison>>
+We discovered two significant factors that influenced our decision to use one
+laser over the other.
+
+The first was attenuation - within the visible spectrum, water attenuates light
+with longer wavelengths significantly more than shorter wavelengths, and so red
+light is more difficult to see at greater distances. From our testing,
+we found that the red laser became incredibly difficult to spot at around 5m.
+Figure\nbsp\ref{fig:laser-test} shows the two laser dots side by side in clear water at a distance
+of 2m. The red laser is barely visible, while the green laser is still very bright.
+
+#+ATTR_LATEX: :scale 0.3
+#+ATTR_ORG: :width 200px
+#+CAPTION: Lasers from left to right: Shark laser (green), Innovation Scuba, Orca, Gold
+#+LABEL: fig:laser-test
+[[file:images/lasers-close.JPG]]
+
+The second was fish behavior - from tests with real fish, divers have observed
+that fish tended to avoid the green laser. Our main hypothesis for why this
+occurs is that fish are able to see green light far better than red. In
+especially turbid water, added scattering meant that the beam was visible even
+when the beam was not pointed directly at the fish's eyes. This meant that in La
+Jolla, fish were especially skittish around the green laser. We realized this
+because after the divers made a safety stop further off the bottom, when
+pointing the green laser at the fish they seemed less afraid.
+
 *** Robustness to Tilt
 To evaluate the system's accuracy with respect to different tilt angles, we had
 the following experiment setup. We captured a total of 183 images of a
@@ -937,13 +1028,16 @@ majority of images taken will fit this criteria.
 There are several areas in which the mechanical system can fail.
 **** Laser Mount
 <<sec:mount-failure>>
-The laser mounts are made out of PLA, and therefore absorb water.
+The laser mounts are made out of PLA, and therefore absorb
+water. This causes the laser mounts to become brittle, and they have been shown
+to break after a month or two of operation.
 **** Laser Pointer
 The laser pointers themselves have also been known to fail. There are two main
 reasons for this:
 1. The O-rings fail due to lack of proper maintenance or debris getting in the way, flooding the battery enclosure
 2. A mechanical failure from the mechanism which activates the laser.
 
+A collaboration with Backscatter
 *** User Experience
 Divers have said the following about using the Fishsense Lite modules:
 - Generally the devices are ``fun and easy to use''
@@ -958,6 +1052,20 @@ a big issue if such an angle was easily accessible. However, if the fish
 happened to be next to a rock at an angle, getting a good picture proved
 difficult.
 * Conclusion
+In this work we have discussed the construction and inner workings of Fishsense
+Lite. We have laid out the conditions for which it works, described the
+procedures required to operate it, and the underlying principle behind the
+distance measurement mechanism.
+
+#+LATEX: \appendix
+* Appendix
+** Test Schedule
+#+CAPTION: List of pool tests conducted, with their purpose
+#+LABEL: tab:comparison
+| Timestamp | Description |
+|-----------+-------------|
+|           |             |
+
 * Backmatter                                                         :ignore:
 \bibliographystyle{plain}
 \bibliography{fishsense}
