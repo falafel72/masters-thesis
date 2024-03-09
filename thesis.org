@@ -915,6 +915,7 @@ dives, a Fishsense Lite camera unit, along with a stereo Go Pro pair, were used
 to measure fish lengths.
 ** Tests
 *** Overall Accuracy
+<<sec:accuracy>>
 To measure the accuracy of this system, we rely on the accuracy of length
 measurements obtained, since we are unable to rely on the true position and
 orientation of the laser. In particular, we use relative length, as our sensor
@@ -947,10 +948,19 @@ than the snout and fork points. We know that Fred is approximately 8cm thick at
 his thickest point, so we can adjust for this. Figure\nbsp\ref{} shows the adjusted
 length measurements, and we can see that they line up almost perfectly.
 
+*** Comparison with Stereo Video
+The author would like to acknowledge and thank Jen Loch for analyzing the stereo
+video data, and for providing the statistical background needed to write this
+section.
+
 *** Field Calibration Accuracy
 <<sec:field-calibration-testing>>
 *** Different Calibration Procedures
 <<sec:math-testing>>
+We again test the accuracy of the calibration by comparing reference length
+measurements with different laser calibrations. Figure\nbsp\ref{} shows the results
+from obtained from both calibrations - as can be seen, they are virtually
+identical.
 *** Effects of Freshwater Versus Saltwater
 Unsurprisingly, we found that the red laser attenuated much more than the green
 laser. Particles in the water also affected this, as the light would scatter off
