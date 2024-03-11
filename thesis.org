@@ -142,7 +142,7 @@ Frequency is important since we want to be able to fish sustainably
 ** Problem Specification
 This work will target the Fishsense Lite - the device that consists of the laser
 triangulation technique as well as the software to process images taken by the
-physical device. 
+physical device.
 
 The length measurement algorithm makes the following assumptions about the
 object of interest:
@@ -953,6 +953,13 @@ The author would like to acknowledge and thank Jen Loch for analyzing the stereo
 video data, and for providing the statistical background needed to write this
 section.
 
+During the Florida Keys deployment, individual fish were measured both with the
+Fishsense Lite camera module, and a stereo Go Pro pair.
+
+Even if the two devices produce different length measurements, statistical
+methods can be used to adjust to known lengths if biases are consistent across
+all measurements. One method used to measure the similarity of the measurements
+between the two camera modules is the Kruskal-Wallis test. This measures the
 *** Field Calibration Accuracy
 <<sec:field-calibration-testing>>
 *** Different Calibration Procedures
@@ -961,6 +968,19 @@ We again test the accuracy of the calibration by comparing reference length
 measurements with different laser calibrations. Figure\nbsp\ref{} shows the results
 from obtained from both calibrations - as can be seen, they are virtually
 identical.
+
+The reasoning for why may be that these two methods are theoretically
+equivelant, in the sense that the line defined by the mean direction of
+differences is in fact the optimal line that we get from our Gauss-Newton
+formulation. Work to prove that still needs to be done.
+
+This naturally gives us a much simpler method of performing laser calibration.
+
+The author would like to acknowledge Professor Nikolay Atanasov for providing me
+with the basis of this method.
+
+**** Annotations :noexport:
+include benchmarks maybe?
 *** Effects of Freshwater Versus Saltwater
 Unsurprisingly, we found that the red laser attenuated much more than the green
 laser. Particles in the water also affected this, as the light would scatter off
@@ -1080,7 +1100,7 @@ distance measurement mechanism.
 \bibliographystyle{plain}
 \bibliography{fishsense}
 * Problem Motivation                                               :noexport:
-Scrapping this, it's too wordy 
+Scrapping this, it's too wordy
 
 I will begin describing the problem with some background on the work that
 Engineers for Exploration (E4E for short) does, as I think it provides important
