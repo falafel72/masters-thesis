@@ -264,11 +264,27 @@ law distortions, a stereo camera approach would be impossible.
 While the technology we use here is novel to fish length measurement, it has
 been used for a wide variety of other purposes.
 * Implementation Details
-** Brain Dump :noexport:
+** Preamble :ignore:
 Our system relies on the diver taking images with the laser beam pointed on the
 fish. These images can then be processed to obtain an approximation of the
 fish's length.
 
+** Pinhole Camera Model
+All of the calculations shown assume that our camera follows the pinhole camera
+assumption. This means that we assume that all light passes through a single
+point known as the focal point. In air, this assumption is extremely common and
+is used in stereo cameras for object triangulation. However, underwater it is
+more difficult to make this assumption, especially with our current hardware
+setup. Our camera's transparent port separating the camera lens from the water
+is flat, meaning that Snell's law causes incoming light to refract. This
+distorts images such that the projections from 3D space into the image plane are
+no longer linear.
+
+We currently address this issue by attaching a corrective optic to the camera,
+and so far we have observed that this is sufficient to allow us to continue
+making this assumption. Work is currently being done to attempt to model the
+Snell's law distortions without the use of the corrective optic.
+** Quantites and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to the
 right in the image, the $y$ axis points downward in the image, and the $z$ axis
 points forward, away from the camera. This system has the added bonus that the
@@ -280,9 +296,9 @@ the size of the fish in pixels. Figure\nbsp\ref{} shows a diagram of both the li
 fish and its projection onto the image plane. If the apparent size of the fish
 is known, using similar triangles we are able to obtain the following
 relationship:
-\[
-L = \frac{dxw}{f}
-\]
+\begin{equation}
+L = \frac{dxw}{f} \label{eq:length-from-depth}
+\end{equation}
 
 Here $x$ represents the size of the fish in pixels, $w$ represents the ``pixel
 pitch'' (distance between two pixels on the image sensor), and $f$ represents
@@ -300,19 +316,244 @@ beam can therefore be described by a ray with scale factor $\lambda$:
 \text{laser} = \ell + \lambda\alpha
 \]
 
+** Finding the Distance to the Fish
 Note that our restriction that $\ell$ lies purely in the $xy$ plane means that the
 $z$ component of $\ell$ is always zero.
 
 We assume that this laser beam intersects the fish at an unknown point $p$. As
 imaged by the camera, we know that this laser dot will have known pixel
-coordinates $\mathfrak{p}$. This creates two rays that converge toward $p$: the
-laser beam, and the ray from the camera that passes through $\mathfrak{p}$ on
-the image plane. By projecting both of these rays outward until they intersect,
-we can identify where $p$ is.
+coordinates $\mathfrak{p}$. This corresponds to a vector $p_\text{image}$ on the
+image plane, defined as
+\[
+p_\text{image} = \begin{bmatrix}
+\mathfrak{p}_x \\
+\mathfrak{p}_y \\
+f
+\end{bmatrix}
+\]
+
+We arbitrarily decide to scale this vector to be of unit
+length, defining
+\[
+v = \frac{p_\text{image}}{\lVert p_\text{image}\rVert}
+\]
+
+This creates two rays that converge toward $p$: the laser beam, and the ray from
+the camera that passes through $\mathfrak{p}$ on the image plane. By projecting
+both of these rays outward until they intersect, we can identify where $p$ is.
+
+More formally, we define scale factors $\lambda_1$ and $\lambda_2$ such that
+\[
+\ell + \lambda_1\alpha = \lambda_2v
+\]
+
+We can refactor the above relationship to be the form
+
+\begin{equation*}
+\begin{bmatrix}
+-\alpha & -v
+\end{bmatrix}
+\begin{bmatrix}
+\lambda_1 \\
+\lambda_2
+\end{bmatrix}
++ \ell = 0
+\end{equation*}
+
+Due to pixel quantization, the two rays may not line up perfectly, so we can
+obtain the least-squares solution, i.e. the solution to the minimization problem
+\[
+\text{argmin}_{x} \lVert Ax - b \rVert^2
+\]
+
+where $A \in \mathbb{R}^{m\times n}$, $m > n$, and $x,b\in \mathbb{R}^{n}$. In our case, we
+define the following:
+\begin{align*}
+A &= \begin{bmatrix}
+\alpha \ -v
+\end{bmatrix} \\
+x &= \begin{bmatrix}
+\lambda_1 \\
+\lambda_2
+\end{bmatrix} \\
+b &= -\ell
+\end{align*}
+
+In general, we can solve a least squares problem with the following formula:
+\[
+x = (A^TA)^{-1}A^T b
+\]
+
+Using this, we can obtain a closed form solution for both $\lambda_1$ and $\lambda_2$. We
+only require one of them, so we use $\lambda_2$:
+\[
+ \lambda_2 = \frac{-\alpha^T \ell \alpha^T v + v^T \ell}{1 - (\alpha^T v)^2}
+\]
+
+Experiments from using $\lambda_1$ or $\lambda_2$ are show in Section\nbsp\ref{}.
+
+Obtaining $\lambda_1$ or $\lambda_2$ allows us to obtain $p$, and the z-component of $p$,
+along with Equation\nbsp\ref{eq:length-from-depth}, gives us the corresponding fish
+length.
+
+** Laser Calibration
+<<sec:laser-calibration>>
+So far, we have assumed that the parameters of the laser $\alpha$ and $\ell$ are known.
+These cannot be measured directly for two reasons:
+1. Precise measurements relative to the optical center of the camera are hard to
+   obtain, since in reality the location of the optical center of the camera is
+   not known.
+2. Since the laser mount is not perfectly stable, and can change in between
+   dives and over time, the parameters need to be recalculated.
+
+Thus, we must use a calibration procedure.
+
+We have $n$ images from which we obtain laser points $p_i$. Here I describe two
+possible algorithms to solve this. A comparison of the two methods is presented
+in Section\nbsp[[sec:math-testing]].
+**** Hu
+We leverage the fact that the parameterized laser beam must intersect with
+the laser dot point to give us the following series of equations:
+\begin{equation}
+p_i = \lVert p_i - \ell \rVert\alpha + \ell
+\label{eq:problem}
+\end{equation}
+
+We stack these points into a single vector, defining the following; \[
+\mathbf{p} = \begin{bmatrix} p_1 \\ p_2 \\ \vdots \\ p_n \end{bmatrix} \] We
+have a relationship that relates our known quantities $p_i$ and unknown
+quantities $\alpha$ and $\ell$, though in this case the relationship is
+non-linear. We must therefore choose a non-linear optimization method to find
+the best candidates for $\alpha$ and $\ell$ that satisfy this.
+
+First we define a parameter vector $x$ that contains all of our parameters:
+\[
+x = \begin{bmatrix}
+\alpha \\
+\ell_x \\
+\ell_y
+\end{bmatrix}
+\]
+
+We must first define a function in terms of our parameters which we want to
+minimize:
+
+\[
+g_i(x) = \lVert p_i - \ell \rVert \alpha + \ell
+\]
+
+We then define the vector function $F(\alpha,\ell)$ as follows:
+\[
+\mathbf{g}(x) = \begin{bmatrix}
+g_1(x) \\
+g_2(x) \\
+\vdots \\
+g_n(x)
+\end{bmatrix}
+\]
+
+We then formulate this in terms of the following optimization problem:
+\begin{align}
+\text{argmin}_{x}\lVert \mathbf{r}(x)\rVert, \nonumber \\
+\mathbf{r}(x) = \mathbf{p} - \mathbf{g}(x) \label{eq:residual}
+\end{align}
+
+The method we currently choose to solve this is the Gauss-Newton method, which involves the following steps:
+1. Find the Jacobian $J_r$ of the minimizing function w.r.t to $x$.
+2. Take iterative steps of the following form:
+\[
+x^{(k+1)} = x^{(k)} - (J_r^TJ_r)^{-1}J_r \mathbf{r}(x^{(k)})
+\]
+
+According to Equation \ref{eq:residual}, only the second term depends on our parameters, so we can rework our iterative step into
+\[
+x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(\alpha,\ell)
+\]
+
+
+There are many other methods of this kind that we could have used, such as the
+Levenberg-Marquardt algorithm, though from our experiments this calibration
+method has been sufficient.
+
+The Jacobian of $\mathbf{g}(x)$ is given by the following, and the full
+derivation is detailed in Section\nbsp[[sec:jacobian-derivation]]:
+
+\begin{align}
+J_g &= \begin{bmatrix}
+J_{g\alpha}^1 & J_{g\ell}^1 \\
+J_{g\alpha}^2 & J_{g\ell}^2 \\
+\vdots & \vdots \\
+J_{g\alpha}^n & J_{g\ell}^n
+\end{bmatrix} \in \mathbb{R}^{3n\times5}\nonumber \\
+J_{g\alpha}^i &= \lVert p_i - \ell\rVert I \in \mathbb{R}^{3\times3}\\
+J_{g\ell}^i &= \begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+0 & 0
+\end{bmatrix}
+\left(I_{3\times3} - \alpha\frac{(p_i - \ell)^T}{\lVert p_i - \ell\rVert }\right) \in \mathbb{R}^{3\times2}
+\end{align}
+
+***** Derivation of Jacobian
+<<sec:jacobian-derivation>>
+Recall the function $\vb{g}(\alpha,\ell)$:
+\begin{equation*}
+    \vb{g}(\alpha,\ell) = \begin{bmatrix}
+        \lVert p_1 - \ell\rVert\alpha + \ell \\
+        \lVert p_2 - \ell\rVert\alpha + \ell \\
+        \vdots \\
+        \lVert p_n - \ell\rVert\alpha + \ell
+   \end{bmatrix},
+\end{equation*}
+where $p_i$ is the laser dot in optical coordinates from calibration image $i$.
+
+We can split $J_g$ into two block columns representing the Jacobians with respect to different vectors:
+\begin{equation*}
+    J_g = \begin{bmatrix}
+        J_{g\alpha} & J_{g\ell}
+    \end{bmatrix}
+\end{equation*}
+Calculating $J_{g\alpha}$ is fairly trivial, as the function is linear in $\alpha$:
+\begin{equation*}
+    J_{g\alpha} = \begin{bmatrix}
+        \lVert p_1 - \ell\rVert I \\
+        \lVert p_2 - \ell\rVert I \\
+        \vdots \\
+        \lVert p_n - \ell\rVert I
+    \end{bmatrix}
+\end{equation*}
+
+We can take the Jacobian with respect to $\ell$ by taking the Jacobians of each row individually. For a particular image $i$ we have:
+\begin{align*}
+    \vb{g}_i(\alpha,\ell) &= \lVert p_i - \ell \rVert \alpha + \ell \\
+    \frac{\partial}{\partial\ell}\vb{g}_i(\alpha,\ell) &= -\frac{1}{\lVert p_i - \ell\rVert}\left[\begin{smallmatrix}
+        (p_x - \ell_x)\alpha_x+1 & (p_y - \ell_y)\alpha_x & (p_z - \ell_z)\alpha_x \\(p_x - \ell_x)\alpha_y & (p_y - \ell_y)\alpha_y + 1 & (p_z - \ell_z)\alpha_y \\p_x - \ell_x)\alpha_z & (p_y - \ell_y)\alpha_z & (p_z - \ell_z)\alpha_z + 1
+    \end{smallmatrix}\right] \\
+        &= I - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T
+\end{align*}
+
+We only want the first two columns of this, so we get
+\begin{equation*}
+    J^i_{g\ell} =  \begin{bmatrix} I_{2\times 2} \\ 0\end{bmatrix}(I_{3\times3} - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T) \in \mathbb{R}^{3\times 2}
+\end{equation*}
+
+**** Atanasov
+Once again assuming we have $n$ images with image $i$ corresponding with laser
+dot point $p_i$, a straightforward method to get our laser trajectory $\alpha$ can be
+obtained from a normed average over the differences between all points:
+\[
+        \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neq i}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
+\]
+
+This can be flipped as necessary to face the direction in which the laser beam
+travels. Once $\alpha$ is obtained, we can choose a point $p_k$ such that $p_k$ is on
+our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with the
+$xy$ plane to be $\ell$.
+
 ** Missing pieces :noexport:
+- [ ] the laser hardware setup rationale
 - [ ] pinhole camera model ("optical center")
 - [ ] the image plane
-** Hardware Setup
 
 * Testing
 ** Locations
@@ -933,148 +1174,7 @@ solution exists:
 
 We then trivially obtain $p$ from $p = \lambda_2v$.
 *** Inverse Problem (Calibration)
-<<sec:laser-calibration>>
-Here we assume that $\alpha$ and $\ell$ are unknown, but we have $n$ images from which
-we obtain laser points $p_i$. Here I describe two possible algorithms to solve
-this. A comparison of the two methods is presented in Section\nbsp[[sec:math-testing]].
-**** Hu
-We leverage the fact that the parameterized laser beam must intersect with
-the laser dot point to give us the following series of equations:
-\begin{equation}
-p_i = \lVert p_i - \ell \rVert\alpha + \ell
-\label{eq:problem}
-\end{equation}
-
-We stack these points into a single vector, defining the following; \[
-\mathbf{p} = \begin{bmatrix} p_1 \\ p_2 \\ \vdots \\ p_n \end{bmatrix} \] We
-have a relationship that relates our known quantities $p_i$ and unknown
-quantities $\alpha$ and $\ell$, though in this case the relationship is
-non-linear. We must therefore choose a non-linear optimization method to find
-the best candidates for $\alpha$ and $\ell$ that satisfy this.
-
-First we define a parameter vector $x$ that contains all of our parameters:
-\[
-x = \begin{bmatrix}
-\alpha \\
-\ell_x \\
-\ell_y
-\end{bmatrix}
-\]
-
-We must first define a function in terms of our parameters which we want to
-minimize:
-
-\[
-g_i(x) = \lVert p_i - \ell \rVert \alpha + \ell
-\]
-
-We then define the vector function $F(\alpha,\ell)$ as follows:
-\[
-\mathbf{g}(x) = \begin{bmatrix}
-g_1(x) \\
-g_2(x) \\
-\vdots \\
-g_n(x)
-\end{bmatrix}
-\]
-
-We then formulate this in terms of the following optimization problem:
-\begin{align}
-\text{argmin}_{x}\lVert \mathbf{r}(x)\rVert, \nonumber \\
-\mathbf{r}(x) = \mathbf{p} - \mathbf{g}(x) \label{eq:residual}
-\end{align}
-
-The method we currently choose to solve this is the Gauss-Newton method, which involves the following steps:
-1. Find the Jacobian $J_r$ of the minimizing function w.r.t to $x$.
-2. Take iterative steps of the following form:
-\[
-x^{(k+1)} = x^{(k)} - (J_r^TJ_r)^{-1}J_r \mathbf{r}(x^{(k)})
-\]
-
-According to Equation \ref{eq:residual}, only the second term depends on our parameters, so we can rework our iterative step into
-\[
-x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(\alpha,\ell)
-\]
-
-
-There are many other methods of this kind that we could have used, such as the
-Levenberg-Marquardt algorithm, though from our experiments this calibration
-method has been sufficient.
-
-The Jacobian of $\mathbf{g}(x)$ is given by the following, and the full
-derivation is detailed in Section\nbsp[[sec:jacobian-derivation]]:
-
-\begin{align}
-J_g &= \begin{bmatrix}
-J_{g\alpha}^1 & J_{g\ell}^1 \\
-J_{g\alpha}^2 & J_{g\ell}^2 \\
-\vdots & \vdots \\
-J_{g\alpha}^n & J_{g\ell}^n
-\end{bmatrix} \in \mathbb{R}^{3n\times5}\nonumber \\
-J_{g\alpha}^i &= \lVert p_i - \ell\rVert I \in \mathbb{R}^{3\times3}\\
-J_{g\ell}^i &= \begin{bmatrix}
-1 & 0 \\
-0 & 1 \\
-0 & 0
-\end{bmatrix}
-\left(I_{3\times3} - \alpha\frac{(p_i - \ell)^T}{\lVert p_i - \ell\rVert }\right) \in \mathbb{R}^{3\times2}
-\end{align}
-
-***** Derivation of Jacobian
-<<sec:jacobian-derivation>>
-Recall the function $\vb{g}(\alpha,\ell)$:
-\begin{equation*}
-    \vb{g}(\alpha,\ell) = \begin{bmatrix}
-        \lVert p_1 - \ell\rVert\alpha + \ell \\
-        \lVert p_2 - \ell\rVert\alpha + \ell \\
-        \vdots \\
-        \lVert p_n - \ell\rVert\alpha + \ell
-   \end{bmatrix},
-\end{equation*}
-where $p_i$ is the laser dot in optical coordinates from calibration image $i$.
-
-We can split $J_g$ into two block columns representing the Jacobians with respect to different vectors:
-\begin{equation*}
-    J_g = \begin{bmatrix}
-        J_{g\alpha} & J_{g\ell}
-    \end{bmatrix}
-\end{equation*}
-Calculating $J_{g\alpha}$ is fairly trivial, as the function is linear in $\alpha$:
-\begin{equation*}
-    J_{g\alpha} = \begin{bmatrix}
-        \lVert p_1 - \ell\rVert I \\
-        \lVert p_2 - \ell\rVert I \\
-        \vdots \\
-        \lVert p_n - \ell\rVert I
-    \end{bmatrix}
-\end{equation*}
-
-We can take the Jacobian with respect to $\ell$ by taking the Jacobians of each row individually. For a particular image $i$ we have:
-\begin{align*}
-    \vb{g}_i(\alpha,\ell) &= \lVert p_i - \ell \rVert \alpha + \ell \\
-    \frac{\partial}{\partial\ell}\vb{g}_i(\alpha,\ell) &= -\frac{1}{\lVert p_i - \ell\rVert}\left[\begin{smallmatrix}
-        (p_x - \ell_x)\alpha_x+1 & (p_y - \ell_y)\alpha_x & (p_z - \ell_z)\alpha_x \\(p_x - \ell_x)\alpha_y & (p_y - \ell_y)\alpha_y + 1 & (p_z - \ell_z)\alpha_y \\p_x - \ell_x)\alpha_z & (p_y - \ell_y)\alpha_z & (p_z - \ell_z)\alpha_z + 1
-    \end{smallmatrix}\right] \\
-        &= I - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T
-\end{align*}
-
-We only want the first two columns of this, so we get
-\begin{equation*}
-    J^i_{g\ell} =  \begin{bmatrix} I_{2\times 2} \\ 0\end{bmatrix}(I_{3\times3} - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T) \in \mathbb{R}^{3\times 2}
-\end{equation*}
-
-**** Atanasov
-Once again assuming we have $n$ images with image $i$ corresponding with laser
-dot point $p_i$, a straightforward method to get our laser trajectory $\alpha$ can be
-obtained from a normed average over the differences between all points:
-\[
-        \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neq i}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
-\]
-
-This can be flipped as necessary to face the direction in which the laser beam
-travels. Once $\alpha$ is obtained, we can choose a point $p_k$ such that $p_k$ is on
-our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with the
-$xy$ plane to be $\ell$.
+Here we assume that $\alpha$ and $\ell$ are unknown, but
 ** Software
 *** Overview :ignore:
 In order to obtain length measurements from the captured images, we use a custom
