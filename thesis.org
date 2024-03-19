@@ -265,9 +265,23 @@ While the technology we use here is novel to fish length measurement, it has
 been used for a wide variety of other purposes.
 * Implementation Details
 ** Preamble :ignore:
+Our primary goals with this system are to reduce the cost to gather fish length
+data, and to make th epractice more accessible to recreational divers. To
+accomplish this, we attach an underwater camera (in our case, an Olympus TG6) to
+an off-the-shelf underwater laser pointer. Both of these tools are commonly
+owned by recreational divers, which is why we target this low cost hardware
+setup. Figure\nbsp\ref{fig:fsl} shows an example of one such camera system.
+
+#+ATTR_LATEX: :scale 0.2  :options angle=-90
+#+ATTR_ORG: :width 200px
+#+CAPTION: A fully assembled Fishsense Lite unit.
+#+label: fig:fsl
+[[file:images/fishsense-lite-system.jpg]]
+
 Our system relies on the diver taking images with the laser beam pointed on the
-fish. These images can then be processed to obtain an approximation of the
-fish's length.
+fish. Purely from the image, as well as a priori knowledge of the laser beam
+parameters, we can then use this to obtain a length of the fish within the
+image.
 
 ** Pinhole Camera Model
 All of the calculations shown assume that our camera follows the pinhole camera
@@ -284,12 +298,20 @@ We currently address this issue by attaching a corrective optic to the camera,
 and so far we have observed that this is sufficient to allow us to continue
 making this assumption. Work is currently being done to attempt to model the
 Snell's law distortions without the use of the corrective optic.
+
+
+The pinhole camera model assumes that the image from a camera can be represented
+on a plane in front of the optical center, called the image plane. This plane is
+normal to the camera axis, and the distance between the focal point and this
+plane is known as the focal length. This focal length is obtained from camera
+calibration.
+
 ** Quantites and Conventions
-Our axis conventions in this chapter are as follows: the $x$ axis points to the
-right in the image, the $y$ axis points downward in the image, and the $z$ axis
-points forward, away from the camera. This system has the added bonus that the
-$x$ and $y$ axes coincide with the directions of pixel coordinates. The origin
-will be defined at the camera's optical center.
+Our axis conventions in this chapter are as follows: the $x$ axis points to
+the right in the image, the $y$ axis points downward in the image, and the $z$
+axis points forward, away from the camera. This system has the added bonus that
+the $x$ and $y$ axes coincide with the directions of pixel coordinates. The
+origin will be defined at the camera's optical center.
 
 Given a particular fish image, we assume that we are able to trivially pick out
 the size of the fish in pixels. Figure\nbsp\ref{} shows a diagram of both the live
@@ -315,6 +337,44 @@ beam can therefore be described by a ray with scale factor $\lambda$:
 \[
 \text{laser} = \ell + \lambda\alpha
 \]
+
+Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one place.
+
+#+CAPTION: Diagram demonstrating known quantities. Laser shown in green, fish plane shown in red, image sensor shown in gray.
+#+LABEL: fig:diag
+#+begin_figure
+    \centering
+    \begin{tikzpicture}
+    [cube/.style={very thick,black},
+			grid/.style={very thin,gray},
+			axis/.style={->,black,thick}];
+
+   \filldraw[
+        draw=red,%
+        fill=red!20,%
+    ]          (1,1,-5)
+            -- (1,-1,-5)
+            -- (-1,-1,-5)
+            -- (-1,1,-5)
+            -- cycle;
+    \filldraw[
+        draw=black,%
+        fill=black!20,%
+    ]          (0.2,0.15,-1)
+            -- (0.2,-0.15,-1)
+            -- (-0.2,-0.15,-1)
+            -- (-0.2,0.15,-1)
+            -- cycle;
+
+    \draw[green,thick]  (1.5,0.5,0) node[anchor=west,black]{$\alpha \mid \lVert\alpha\rVert = 1$} --(0.3,0.1,-5) node[anchor=west,black]{$p$};
+
+    \draw[->, black,thin] (1.5,0.5,0)--(1.26732998, 0.42244333, -0.96945842) node[anchor=east]{$\ell$};
+    \draw[black,dashed] (0.3,0.1,-5)--(0,0,0);
+    \draw[axis] (0,0,0)--(1,0,0) node[anchor=west]{$x$};
+    \draw[axis] (0,0,0)--(0,-1,0) node[anchor=west]{$y$};
+    \draw[axis] (0,0,0)--(0,0,-1) node[anchor=west]{$z$};
+    \end{tikzpicture}
+#+end_figure
 
 ** Finding the Distance to the Fish
 Note that our restriction that $\ell$ lies purely in the $xy$ plane means that the
@@ -396,7 +456,7 @@ Obtaining $\lambda_1$ or $\lambda_2$ allows us to obtain $p$, and the z-componen
 along with Equation\nbsp\ref{eq:length-from-depth}, gives us the corresponding fish
 length.
 
-** Laser Calibration
+** Finding Laser Parameters
 <<sec:laser-calibration>>
 So far, we have assumed that the parameters of the laser $\alpha$ and $\ell$ are known.
 These cannot be measured directly for two reasons:
@@ -405,7 +465,6 @@ These cannot be measured directly for two reasons:
    not known.
 2. Since the laser mount is not perfectly stable, and can change in between
    dives and over time, the parameters need to be recalculated.
-
 Thus, we must use a calibration procedure.
 
 We have $n$ images from which we obtain laser points $p_i$. Here I describe two
@@ -550,14 +609,18 @@ travels. Once $\alpha$ is obtained, we can choose a point $p_k$ such that $p_k$ 
 our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with the
 $xy$ plane to be $\ell$.
 
+** Calibration Procedures
+*** Camera Calibration
+*** Laser Calibration
 ** Missing pieces :noexport:
 - [ ] the laser hardware setup rationale
 - [ ] pinhole camera model ("optical center")
-- [ ] the image plane
-
+- [X] the image plane
+- [ ] camera calibration
+- [ ] laser field calibration
 * Testing
 ** Locations
-The data in this section were gathered from three locations, listed below.
+The data in this section were gathered from four locations, listed below.
 *** Canyonview Pool
 The vast majority of our data comes from Canyonview pool.
 **** Note :noexport:
@@ -602,6 +665,15 @@ to measure fish lengths.
 ** Tests
 *** Overall Accuracy
 <<sec:accuracy>>
+
+We have attempted to measure the device's rangefinding accuracy by comparing the
+calibrated test measurements with a tape measure. Figure\nbsp\ref{} demonstrates the
+results. As can be seen, the range from the tape measure sags below the range
+found from the tape measure. This may be because in our experiment setup, the
+tape measure is suspended in the water, while we attempted to keep it as taut as
+possible. We hypothesize that the tape measure sagging may be the cause of the
+discrepancy in measured distances.
+
 To measure the accuracy of this system, we rely on the accuracy of length
 measurements obtained, since we are unable to rely on the true position and
 orientation of the laser. In particular, we use relative length, as our sensor
@@ -638,7 +710,7 @@ length measurements, and we can see that they line up almost perfectly.
 Small errors in the location of the detected laser point can contribute to errors in the
 *** Comparison with Stereo Video
 During the REEF deployment, the Fishsense Lite camera modules were tested
-simultaneously with a stereo Go Pro rig with a baseline of ??m. Figure\nbsp\ref{}
+simultaneously with a stereo Go Pro rig with a baseline of 0.5m. Figure\nbsp\ref{}
 shows examples of fish length distributions from specific individual fish. To
 test if the data collected with the two different systems could be considered to
 be significantly different, we used a Kruskal-Wallis test. This was done using
@@ -765,16 +837,17 @@ center location.
 There are several areas in which the mechanical system can fail.
 **** Laser Mount
 <<sec:mount-failure>>
-The laser mounts are made out of PLA, and therefore absorb
-water. This causes the laser mounts to become brittle, and they have been shown
-to break after a month or two of operation.
+
+The laser mounts are made out of PLA, and therefore absorb water. This causes
+the laser mounts to become brittle, and they have been shown to break after a
+month or two of operation. Current work is being done to create these mounts out
+of a different material which does not absorb water and resists corrosion.
+
 **** Laser Pointer
 The laser pointers themselves have also been known to fail. There are two main
 reasons for this:
 1. The O-rings fail due to lack of proper maintenance or debris getting in the way, flooding the battery enclosure
-2. A mechanical failure from the mechanism which activates the laser.
-
-A collaboration with Backscatter
+2. A mechanical failure from the mechanism which activates the laser. Wear from turning them on so many times causes them to chip.
 *** User Experience
 Divers have said the following about using the Fishsense Lite modules:
 - Generally the devices are ``fun and easy to use''
@@ -962,12 +1035,6 @@ The device used to take the fish images must fit the following assumptions:
 
 One example of our implementation of the Fishsense Lite unit is shown in Figure\nbsp\ref{fig:fsl}.
 
-#+ATTR_LATEX: :scale 0.2  :options angle=-90
-#+ATTR_ORG: :width 200px
-#+CAPTION: A fully assembled Fishsense Lite unit.
-#+label: fig:fsl
-[[file:images/fishsense-lite-system.jpg]]
-
 We currently have seven Fishsense Lite camera units, codenamed FSL-01 through
 FSL-07. These are all comprised of exactly the same hardware components listed
 below.
@@ -1043,42 +1110,6 @@ We define the following quantities:
  - $o \in \mathbb{R}^3$: the origin, which we define using the principal point. Specifically, the origin will be located at $\mathfrak{p}_p + \begin{bmatrix}0 & 0 & f\end{bmatrix}^T$.
 
 Figures\nbsp\ref{fig:diag} and \ref{fig:image_sensor} are used to illustrate these.
-
-#+CAPTION: Diagram demonstrating known quantities. Laser shown in green, fish plane shown in red, image sensor shown in gray.
-#+LABEL: fig:diag
-#+begin_figure
-    \centerin           g
-    \begin{tikzpicture}
-    [cube/.style={very thick,black},
-			grid/.style={very thin,gray},
-			axis/.style={->,black,thick}];
-
-   \filldraw[
-        draw=red,%
-        fill=red!20,%
-    ]          (1,1,-5)
-            -- (1,-1,-5)
-            -- (-1,-1,-5)
-            -- (-1,1,-5)
-            -- cycle;
-    \filldraw[
-        draw=black,%
-        fill=black!20,%
-    ]          (0.2,0.15,1)
-            -- (0.2,-0.15,1)
-            -- (-0.2,-0.15,1)
-            -- (-0.2,0.15,1)
-            -- cycle;
-
-    \draw[green,thick]  (1.5,0.5,0) node[anchor=west,black]{$\alpha \mid \lVert\alpha\rVert = 1$} --(0.3,0.1,-5) node[anchor=west,black]{$p$};
-
-    \draw[->, black,thin] (1.5,0.5,0)--(1.26732998, 0.42244333, -0.96945842) node[anchor=east]{$\ell$};
-    \draw[black,dashed] (0.3,0.1,-5)--(0.3/6,0.1/6,1);
-    \draw[axis] (0,0,0)--(1,0,0) node[anchor=west]{$x$};
-    \draw[axis] (0,0,0)--(0,-1,0) node[anchor=west]{$y$};
-    \draw[axis] (0,0,0)--(0,0,-1) node[anchor=west]{$z$};
-    \end{tikzpicture}
-#+end_figure
 
 #+CAPTION: Close-up view of the image sensor. The distance between the plane and the origin is the focal length. $\mathfrak{p}$ is the image coordinate of the laser dot.
 #+LABEL: fig:image_sensor
