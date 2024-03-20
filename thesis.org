@@ -84,16 +84,26 @@ opportunity to do all of this.
 #+END_acknowledgements
 * Abstract                                                           :ignore:
 #+BEGIN_dissertationabstract
-Fish length is a crucial metric to evaluate the health of fish populations.
-Current methods most commonly rely on roving diver surveys, where divers
-manually measure length via visual approximation. Doing so requires frequent
-re-training and is prone to a percentage length error of around 20%. This paper
-proposes a novel system made of components that many divers already possess,
-including a waterproof camera and laser pointer. To this, we add a custom mount,
-along with post-processing software to extract length data from captured images.
-The system provides less error ($< 15\%$) than human-made length measurements, and
-allows recreational divers to act as citizen scientists and gather vital fish
-length data with minimal required training.
+Ecologists are interested in studying fish length distributions as a metric for
+the health of fish populations, both for fishery management and to gauge the
+effect of policies and worsening ocean conditions in a small area. Current
+methods of gathering these data involve catch and release programs, which often
+kill the fish being measured, is expensive to coordinate, and only obtains a
+limited sample of the fish population. These are also not possible in marine
+protected areas (MPAs), where fishing is illegal. The state of the art method in
+MPAs is to conduct a roving diver survey, where divers must visually estimate
+and record individual fish lengths. Measurements are generally low-fidelity, and
+divers must be trained and retrained before their estimates are considered to be
+sufficiently accurate.
+
+We are developing a different method that can be used by recreational divers,
+and generates these data using citizen science efforts. We mount a standard
+waterproof laser on a consumer waterproof camera, and obtain fish length purely
+from an image of the fish with the laser dot on it. This work focuses primarily
+on the extraction of the fish's length from the image, using a priori knowledge
+of laser parameters. We show that the accuracy of this solution is better than
+visual estimation, to within 15% of the fish's true length.
+
 #+END_dissertationabstract
 #+LATEX: \mainmatter
 ** Annotation                                                      :noexport:
@@ -260,13 +270,23 @@ calibration procedures are also difficult to do underwater, if not
 impossible\nbsp\cite{Wong2022}. We concluded that until we are able to model Snell's
 law distortions, a stereo camera approach would be impossible.
 
+Our collaborators have also tried using a laser caliper system to measure fish
+length. This system has been used to document the recovery of a population of
+Nassau Grouper over 7 years, in order to quantify the effectiveness of recovery
+efforts\nbsp\cite{Heppel2012}. While such a system was also demonstrated to be more
+effective than visual estimation, it also requires manufacturing a
+custom-machined aluminum mount, which is not easily accessible for most diverse.
+Calibration of the system also involves verifying that the beams are the same
+distance apart up to 15m from the source, which can be challenging to do in a
+field setting.
+
 *** Laser Rangefinding
 While the technology we use here is novel to fish length measurement, it has
 been used for a wide variety of other purposes.
-* Implementation Details
+* Algorithm Details
 ** Preamble :ignore:
 Our primary goals with this system are to reduce the cost to gather fish length
-data, and to make th epractice more accessible to recreational divers. To
+data, and to make the practice more accessible to recreational divers. To
 accomplish this, we attach an underwater camera (in our case, an Olympus TG6) to
 an off-the-shelf underwater laser pointer. Both of these tools are commonly
 owned by recreational divers, which is why we target this low cost hardware
@@ -285,26 +305,52 @@ image.
 
 ** Pinhole Camera Model
 All of the calculations shown assume that our camera follows the pinhole camera
-assumption. This means that we assume that all light passes through a single
-point known as the focal point. In air, this assumption is extremely common and
-is used in stereo cameras for object triangulation. However, underwater it is
-more difficult to make this assumption, especially with our current hardware
-setup. Our camera's transparent port separating the camera lens from the water
-is flat, meaning that Snell's law causes incoming light to refract. This
-distorts images such that the projections from 3D space into the image plane are
-no longer linear.
+assumption. In air, this assumption is extremely common and is used in stereo
+cameras for object triangulation.
 
-We currently address this issue by attaching a corrective optic to the camera,
-and so far we have observed that this is sufficient to allow us to continue
-making this assumption. Work is currently being done to attempt to model the
-Snell's law distortions without the use of the corrective optic.
+The pinhole camera model assumes that all light that comes into the camera
+passes through a single point known as the /focal point/, or /optical center/, of
+the camera. All incoming rays fall onto the image sensor, which is a plane
+perpendicular to the camera's axis, at a fixed distance from the focal point
+known as the /focal length/. The image projected onto the sensor is a flipped
+version of the real life scene, as the light rays are inverted after passing
+through the optical center.
 
+Instead of looking at the image on the image sensor, it is typically the
+convention to mirror the image sensor plane in front of the optical sensor, such
+that the distance from the focal point to this new plane is also the focal
+length. This plane is designated as the /image plane/. This convention allows us
+to more easily translate from pixel coordinates to coordinates in the image
+plane, as we need only know how large each pixel is to map to physical units
+without needing to invert.
 
-The pinhole camera model assumes that the image from a camera can be represented
-on a plane in front of the optical center, called the image plane. This plane is
-normal to the camera axis, and the distance between the focal point and this
-plane is known as the focal length. This focal length is obtained from camera
-calibration.
+Underwater it is more difficult to make the assumption that imaging systems
+follow the pinhole camera model, especially with our current hardware setup. Our
+camera's transparent port separating the camera lens from the water is flat,
+meaning that Snell's law causes incoming light to refract. Measures to mitigate
+this problem are detailed in Section\nbsp[[sec:backscatter]].
+** Hardware Setup
+*** Overview :ignore:
+
+*** Camera
+For our own testing, we use an Olympus TG6, a common camera for divers to own
+for underwater photography. This camera itself is waterproof, though we use
+another protective housing around it.
+
+This is just one example of a camera that can be used for this system --
+theoretically any camera would work.
+*** Wide Angle Lens
+<<sec:backscatter>>
+
+To fit our pinhole camera assumption, we must have some way to rectify images
+taken by the camera. Distortions from Snell's law make this impossible using the
+standard camera model\nbsp\ref{Agrawal2012}.
+
+We add a corrective optic in order to correct these distortions. Developed by
+Backscatter, this corrective optic is designed to attach to the Olympus's
+underwater housing, and is typically used to widen the field of view for
+underwater photographers. Future work is required for us to understand how to
+model these Snell's law distortions better so we can ultimately remove it.
 
 ** Quantites and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to
@@ -313,7 +359,7 @@ axis points forward, away from the camera. This system has the added bonus that
 the $x$ and $y$ axes coincide with the directions of pixel coordinates. The
 origin will be defined at the camera's optical center.
 
-Given a particular fish image, we assume that we are able to trivially pick out
+Given a particular fish image, we assume that we are able to trivially determine
 the size of the fish in pixels. Figure\nbsp\ref{} shows a diagram of both the live
 fish and its projection onto the image plane. If the apparent size of the fish
 is known, using similar triangles we are able to obtain the following
@@ -337,6 +383,13 @@ beam can therefore be described by a ray with scale factor $\lambda$:
 \[
 \text{laser} = \ell + \lambda\alpha
 \]
+
+Note that our restriction that $\ell$ lies purely in the $xy$ plane means that the
+$z$ component of $\ell$ is always zero.
+
+We also assume that we are able to accurately find the laser dot in the image.
+In practice, these are hand-labeled, but automatic algorithms are outside the
+scope of this document.
 
 Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one place.
 
@@ -377,9 +430,6 @@ Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one p
 #+end_figure
 
 ** Finding the Distance to the Fish
-Note that our restriction that $\ell$ lies purely in the $xy$ plane means that the
-$z$ component of $\ell$ is always zero.
-
 We assume that this laser beam intersects the fish at an unknown point $p$. As
 imaged by the camera, we know that this laser dot will have known pixel
 coordinates $\mathfrak{p}$. This corresponds to a vector $p_\text{image}$ on the
@@ -609,15 +659,59 @@ travels. Once $\alpha$ is obtained, we can choose a point $p_k$ such that $p_k$ 
 our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with the
 $xy$ plane to be $\ell$.
 
+** Missing pieces :noexport:
+- [ ] the laser hardware setup rationale
+- [X] pinhole camera model ("optical center")
+- [X] the image plane
+- [ ] camera calibration
+- [X] laser field calibration
+** Conclusion :ignore:
+* Procedures
 ** Calibration Procedures
 *** Camera Calibration
 *** Laser Calibration
-** Missing pieces :noexport:
-- [ ] the laser hardware setup rationale
-- [ ] pinhole camera model ("optical center")
-- [X] the image plane
-- [ ] camera calibration
-- [ ] laser field calibration
+Since our laser mount is not stable enough to guarantee that laser parameters
+stay consistent between dives, we require a laser calibration at the beginning
+of every dive. To do this, we assume that we know the optical frame coordinates
+of each laser dot $p_i$. This requires that we have some kind of depth reference.
+
+The first method that we tested was to use the same checkerboard pattern used in
+camera calibration. The main reasoning for this method was that there are two
+parts to this method for which OpenCV provides functionality for - detecting
+corners of specifically the checkerboard pattern, and calculating a 3D
+transformation given object points and corresponding points in an image.
+However, in the field, requiring that divers carry a large and heavy
+checkerboard for every dive is a large ask.
+
+We have developed a procedure that does not utilize a checkerboard, and can
+instead be done with a dive slate -- something that most divers will carry. An
+example of one of these is shown in Figure\nbsp\ref{fig:slate-calibration}. We add
+pieces of duct tape in an arbitrary pattern on one side to make the slate more
+featureful. We also make the assumption that the slate remains close to parallel
+with the image plane.
+
+#+ATTR_LATEX: :scale 0.4
+#+ATTR_ORG: :width 200px
+#+CAPTION: An example of a slate calibration image.
+#+label: fig:slate-calibration
+[[file:images/slate-calibration.JPG]]
+
+We assume that we have a scanned copy of the dive slate, and hence the physical
+measurements of the duct tape pattern. We perform the following steps:
+1. Get the largest contour on the slate scan
+2. Get the most similar shape on the calibration image
+3. Fit an ellipse to the slate contour, match this with the calibration contour to find rotation and scale
+4. Find the center of masses of both contours and use the difference to obtain translation
+5. Combine scale, rotation and translation to get a 2D transform
+6. Take contour, use transform to get corresponding points in calibration image
+7. Use these points correspondences to obtain a 3D transformation using solvePnP
+8. Define the slate plane using this 3D transformation
+9. Use the detected laser point and project a ray out to the plane. The intersection is our calculated laser dot coordinate.
+
+Results demonstrating this method compared to the checkerboard are shown in
+Section\nbsp[[sec:field-calibration-testing]].
+
+** Conclusion :ignore:
 * Testing
 ** Locations
 The data in this section were gathered from four locations, listed below.
@@ -861,6 +955,7 @@ the fish is close to parallel with the image plane -- this turned out to not be
 a big issue if such an angle was easily accessible. However, if the fish
 happened to be next to a rock at an angle, getting a good picture proved
 difficult.
+** Conclusion :ignore:
 * Conclusion
 In this work we have discussed the construction and inner workings of Fishsense
 Lite. We have laid out the conditions for which it works, described the
@@ -915,6 +1010,7 @@ distortions caused by the port of the underwater housing.
 | 2024-02-26 |                                                                                                                            |
 | 2024-03-04 |                                                                                                                            |
 
+** Fishsense Lite User Manual
 * Backmatter                                                         :ignore:
 \bibliographystyle{plain}
 \bibliography{fishsense}
@@ -1038,23 +1134,6 @@ One example of our implementation of the Fishsense Lite unit is shown in Figure\
 We currently have seven Fishsense Lite camera units, codenamed FSL-01 through
 FSL-07. These are all comprised of exactly the same hardware components listed
 below.
-*** Camera
-For our own testing, we use an Olympus TG6, a common camera for divers to own
-for underwater photography. This camera itself is waterproof, though we use
-another protective housing around it.
-
-This is just one example of a camera that can be used for this system --
-theoretically any camera would work.
-**** Wide Angle Lens
-To fit our pinhole camera assumption, we must have some way to rectify images
-taken by the camera. Distortions from Snell's law make this impossible using the
-standard camera model\nbsp\ref{Agrawal2012}.
-
-We add a corrective optic in order to correct these distortions. Developed by
-Backscatter, this corrective optic is designed to attach to the Olympus's
-underwater housing, and is typically used to widen the field of view for
-underwater photographers. Future work is required for us to understand how to
-model these Snell's law distortions better so we can ultimately remove it.
 **** Annotations :noexport:
 resolution requirements
 rectified image assumption
@@ -1270,45 +1349,6 @@ easier to detect.
 **** Annotations :noexport:
 Ask Hamish about whether it's ok to include his work in here and credit him
 *** Laser Calibration
-Since our laser mount is not stable enough to guarantee that laser parameters
-stay consistent between dives, we require a laser calibration at the beginning
-of every dive. To do this, we assume that we know the optical frame coordinates
-of each laser dot $p_i$. This requires that we have some kind of depth reference.
-
-The first method that we tested was to use the same checkerboard pattern used in
-camera calibration. The main reasoning for this method was that there are two
-parts to this method for which OpenCV provides functionality for - detecting
-corners of specifically the checkerboard pattern, and calculating a 3D
-transformation given object points and corresponding points in an image.
-However, in the field, requiring that divers carry a large and heavy
-checkerboard for every dive is a large ask.
-
-We have developed a procedure that does not utilize a checkerboard, and can
-instead be done with a dive slate -- something that most divers will carry. An
-example of one of these is shown in Figure\nbsp\ref{fig:slate-calibration}. We add pieces of duct tape in
-an arbitrary pattern on one side to make the slate more featureful. We also make
-the assumption that the slate remains close to parallel with the image plane.
-
-#+ATTR_LATEX: :scale 0.4
-#+ATTR_ORG: :width 200px
-#+CAPTION: An example of a slate calibration image.
-#+label: fig:slate-calibration
-[[file:images/slate-calibration.JPG]]
-
-We assume that we have a scanned copy of the dive slate, and hence the physical
-measurements of the duct tape pattern. We perform the following steps:
-1. Get the largest contour on the slate scan
-2. Get the most similar shape on the calibration image
-3. Fit an ellipse to the slate contour, match this with the calibration contour to find rotation and scale
-4. Find the center of masses of both contours and use the difference to obtain translation
-5. Combine scale, rotation and translation to get a 2D transform
-6. Take contour, use transform to get corresponding points in calibration image
-7. Use these points correspondences to obtain a 3D transformation using solvePnP
-8. Define the slate plane using this 3D transformation
-9. Use the detected laser point (as detailed in Section\nbsp[[sec:laser-detection]]) and project a ray out to the plane. The intersection is our calculated laser dot coordinate.
-
-Results demonstrating this method compared to the checkerboard are shown in
-Section\nbsp[[sec:field-calibration-testing]].
 
 *** Automatic Laser Detection
 <<sec:laser-detection>>
