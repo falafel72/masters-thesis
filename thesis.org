@@ -352,6 +352,12 @@ underwater housing, and is typically used to widen the field of view for
 underwater photographers. Future work is required for us to understand how to
 model these Snell's law distortions better so we can ultimately remove it.
 
+In order to verify that the pinhole model was sufficient for this camera system,
+one metric we used was the mean squared error given by OpenCV's
+=calibrateCamera= function. This value was significantly lower when calibrating
+with the dome port on, and the images taken without the dome port showed a
+significantly higher amount of distortion.
+
 ** Quantites and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to
 the right in the image, the $y$ axis points downward in the image, and the $z$
@@ -666,9 +672,25 @@ $xy$ plane to be $\ell$.
 - [ ] camera calibration
 - [X] laser field calibration
 ** Conclusion :ignore:
+In this chapter, we have discussed the assumptions we make for this system to
+work, and outlined the algorithm for obtaining laser parameters, and using these
+to obtain the length of a fish. In the next chapter, we will discuss the
+procedures required to operate this device.
 * Procedures
 ** Calibration Procedures
 *** Camera Calibration
+In order to obtain parameters like the focal length and location of the
+principal point, we must perform calibration of the camera. This is done using
+Zhang's procedure\nbsp\ref{Zhang2000}, where many images of a checkerboard are
+taken, and parameters are found such that known dimensions and regularity of the
+checkerboard are satisfied.
+
+Currently, this procedure must be done underwater. We do the described procedure
+in a swimming pool, with the corrective optic attached. OpenCV's
+=cameraCalibrate= function provides a straightforward way to obtain camera
+intrinsics and lens distortion parameters. We have experimentally observed that
+the camera parameters in salt water differ from the parameters in fresh water,
+which is discussed in Section\nbsp[[sec:fw-vs-sw]].
 *** Laser Calibration
 Since our laser mount is not stable enough to guarantee that laser parameters
 stay consistent between dives, we require a laser calibration at the beginning
@@ -711,7 +733,15 @@ measurements of the duct tape pattern. We perform the following steps:
 Results demonstrating this method compared to the checkerboard are shown in
 Section\nbsp[[sec:field-calibration-testing]].
 
+** Diver Operation
+In the field, after calibrating the laser, operating the camera is fairly
+straightforward. The diver will take a picture of nearby fish as normal, with
+the restriction that the laser dot must be trained on the fish. A full field
+manual is provided in Appendix [[sec:user-manual]].
+** Data Offloading
 ** Conclusion :ignore:
+Herein we have summarized the procedures required to operate the Fishsense Lite
+camera module. The next chapter details how this camera module has been tested.
 * Testing
 ** Locations
 The data in this section were gathered from four locations, listed below.
@@ -793,6 +823,13 @@ during a pool test. We can see that with varying distances away from Fred, the
 estimate remains relatively consistent, and we always underestimate Fred's
 length. There are several potential sources of error that are discussed below.
 
+#+ATTR_LATEX: :scale 0.05
+#+ATTR_ORG: :width 200px
+#+CAPTION: Measurements of Fred, plotted over estimated distances away from the camera.
+#+LABEL: fig:fred
+[[file:images/fred-measurements.jpg]]
+
+
 **** Object Thickness
 Fred, and other fishes we measure, have some thickness. Therefore, if the laser
 dot is in the middle of the fish, the laser dot point is at a different depth
@@ -801,10 +838,11 @@ his thickest point, so we can adjust for this. Figure\nbsp\ref{} shows the adjus
 length measurements, and we can see that they line up almost perfectly.
 
 **** Laser Detection Errors
-Small errors in the location of the detected laser point can contribute to errors in the
+Small errors in the location of the detected laser point can contribute to
+errors in the distance to fish, and therefore the length of the overall fish.
 *** Comparison with Stereo Video
 During the REEF deployment, the Fishsense Lite camera modules were tested
-simultaneously with a stereo Go Pro rig with a baseline of 0.5m. Figure\nbsp\ref{}
+simultaneously with a stereo Go Pro rig with a baseline of 1m. Figure\nbsp\ref{fig:smile-vs-stereo}
 shows examples of fish length distributions from specific individual fish. To
 test if the data collected with the two different systems could be considered to
 be significantly different, we used a Kruskal-Wallis test. This was done using
@@ -812,6 +850,12 @@ R's built in =kruskal.test= function, which assumes a null hypothesis that the
 distributions from the two groups are the same. From this, we get a p-value of
 0.453, which indicates that given the two distributions are the same, the
 current data is fairly likely.
+
+#+ATTR_LATEX: :scale 0.5
+#+ATTR_ORG: :width 200px
+#+CAPTION: Bar chart with error bars showing estimated lengths of individual fish over a single day in the Florida Keys.
+#+LABEL: fig:smile-vs-stereo
+[[file:images/smile_080323_summary.tiff]]
 
 The author would like to acknowledge and thank Jen Loch for analyzing the stereo
 video data, and for providing the statistical background needed to write this
@@ -847,6 +891,7 @@ solutions. It is possible that the Atanasov method may happen to yield the laser
 parameter solution that minimizes the function defined in the Hu method.
 
 *** Effects of Freshwater Versus Saltwater
+<<sec:fw-vs-sw>>
 Unsurprisingly, we found that the red laser attenuated much more than the green
 laser. Particles in the water also affected this, as the light would scatter off
 and render the laser beam visible, as show in Figure\nbsp\ref{fig:sheephead}.
@@ -920,11 +965,17 @@ when the angle becomes lower than 15 degrees, which supports previous studies
 \cite{Heppell2012}. Since our system is diver operated, we expect the vast
 majority of images taken will fit this criteria.
 
-Figure\nbsp\ref{} shows the variances of the percentage measurement errors in all
+Figure\nbsp\ref{fig:variances} shows the variances of the percentage measurement errors in all
 images, where each data point represents a single image. We see that the
 variance in measurements is much higher when the tilt angle is higher. We
 hypothesize that this is due to small deviations from the true laser dot
 center location.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Variances of percentage length error, with each data point being a single image.
+#+LABEL: fig:variances
+[[file:images/checkerboard_error_variances.png]]
 
 *** Points of Mechanical Failure
 <<sec:mechanical-failure>>
@@ -937,11 +988,16 @@ the laser mounts to become brittle, and they have been shown to break after a
 month or two of operation. Current work is being done to create these mounts out
 of a different material which does not absorb water and resists corrosion.
 
+These have typically failed after
+
 **** Laser Pointer
 The laser pointers themselves have also been known to fail. There are two main
 reasons for this:
 1. The O-rings fail due to lack of proper maintenance or debris getting in the way, flooding the battery enclosure
 2. A mechanical failure from the mechanism which activates the laser. Wear from turning them on so many times causes them to chip.
+**** Questions to ask REEF :noexport:
+- how many dives did it take the laser mounts to break?
+- how were the laser mounts being handled when they broke?
 *** User Experience
 Divers have said the following about using the Fishsense Lite modules:
 - Generally the devices are ``fun and easy to use''
@@ -956,6 +1012,9 @@ a big issue if such an angle was easily accessible. However, if the fish
 happened to be next to a rock at an angle, getting a good picture proved
 difficult.
 ** Conclusion :ignore:
+While this system still has many issues with durability and reliability, we have
+still shown that it is capable of obtaining fish lengths to within our desired
+error margins.
 * Conclusion
 In this work we have discussed the construction and inner workings of Fishsense
 Lite. We have laid out the conditions for which it works, described the
@@ -975,8 +1034,6 @@ infrastructure to support fully automatic data processing.
 One area which we are especially interested in advancing is removing the
 corrective optic, which will be possible once we are able to properly model the
 distortions caused by the port of the underwater housing.
-
-
 
 #+LATEX: \appendix
 * Appendix
@@ -1011,6 +1068,7 @@ distortions caused by the port of the underwater housing.
 | 2024-03-04 |                                                                                                                            |
 
 ** Fishsense Lite User Manual
+<<sec:user-manual>>
 * Backmatter                                                         :ignore:
 \bibliographystyle{plain}
 \bibliography{fishsense}
