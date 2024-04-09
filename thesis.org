@@ -1,6 +1,6 @@
 #+OPTIONS: toc:nil H:5
 #+SETUPFILE: setup.org
-#+TITLE: Quantity over Quality: Introducing Fishsense Lite, a Inaccurate Length Measurement Tool for Citizen Science
+#+TITLE: Fishsense Lite: Measuring Fish Length Data with an Underwater Laser Rangefinder
 #+AUTHOR: Kyle Sirong Hu
 #+LATEX_HEADER: \degree{Intelligent Systems, Robotics and Control}{M.S}
 #+LATEX_HEADER: \degreeyear{2024}
@@ -149,7 +149,7 @@ having to count all the fish in the population
 
 Frequency is important since we want to be able to fish sustainably
 
-** Problem Specification
+** Problem Specification :noexport:
 This work will target the Fishsense Lite - the device that consists of the laser
 triangulation technique as well as the software to process images taken by the
 physical device.
@@ -160,6 +160,15 @@ object of interest:
 2. The object is parallel with the image plane.
 3. The laser dot is visible and lies in the same plane as the object.
 
+** Problem Specification
+This work will target the Fishsense Lite - specifically, the reasoning behind
+the hardware setup, the algorithms required to go from fish image to fish
+length, and the preliminary procedures required to operate the device.
+
+We expect fish images to be of the form given by
+Figure\nbsp\ref{}, where the entire body of the fish is visible in the frame, and a
+laser dot is visible on the fish.
+
 Our desired accuracy goal with this system is only within 20% of the true fish
 length -- for this type of data, quantity is desired over quality, especially if
 the error is consistent, as methods exist to compensate for those types of
@@ -168,15 +177,17 @@ visually estimate the length of a fish, which humans are capable of doing to
 within 20% of true length, but requires retraining as frequent as once every 6
 months.
 
-Another important assumption that we make is that the image is rectified. We
-have found that Snell's law is a significant enough problem for image distortion
-that can cause major inaccuracies in depth
-estimation\nbsp\cite{Agrawal2012,Luczynski2017}, though work on investigating
-solutions to these problems is ongoing and is outside of the scope of this work.
-
 Since our solution is constrained to citizen scientists, we will only be
 comparing against other handheld systems and manual visual estimation, and will
-not be considering passive data collection methods.
+not be considering passive data collection methods. More detail about existing
+technologies is provided in Section\nbsp[[sec:existing-technologies]].
+
+*** Outline :noexport:
+- what part of the overall system are we discussing in the document?
+- what are the accuracy bounds of our desired data?
+-
+- what particular technologies are we comparing against?
+
 ** Related Work
 *** Underwater Ranging
 #+ATTR_LATEX: :float sideways :align |c||c|c|c|c| :width 70%
@@ -255,6 +266,8 @@ A summary of these underwater ranging methods can be seen in
 Table\nbsp\ref{tab:comparison}, including Fishsense Lite.
 
 *** Underwater Length Measurement
+<<sec:existing-technologies>>
+
 Previous work has been conducted with Engineers for Exploration under the
 Fishsense umbrella\nbsp\cite{Paxson2022, Tueller2021}. These attempts involved using
 an Intel Realsense D455 -- a depth camera that used both stereo cameras and
@@ -739,6 +752,10 @@ straightforward. The diver will take a picture of nearby fish as normal, with
 the restriction that the laser dot must be trained on the fish. A full field
 manual is provided in Appendix [[sec:user-manual]].
 ** Data Offloading
+After the data has been collected, the operator must offload the data to be
+processed externally. We are currently in the process of developing software in
+order to perform this processing, though the details are out of scope of this
+document.
 ** Conclusion :ignore:
 Herein we have summarized the procedures required to operate the Fishsense Lite
 camera module. The next chapter details how this camera module has been tested.
