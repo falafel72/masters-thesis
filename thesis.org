@@ -1,6 +1,6 @@
 #+OPTIONS: toc:nil H:5
 #+SETUPFILE: setup.org
-#+TITLE: Fishsense Lite: Measuring Fish Length Data with an Underwater Laser Rangefinder
+#+TITLE: Laser-Powered Citizen Science: Enhancing Fish Length Measurement in Marine Environments with Underwater Imaging
 #+AUTHOR: Kyle Sirong Hu
 #+LATEX_HEADER: \degree{Intelligent Systems, Robotics and Control}{M.S}
 #+LATEX_HEADER: \degreeyear{2024}
@@ -110,31 +110,47 @@ visual estimation, to within 15% of the fish's true length.
 Verify the requirements for including material from your own paper
 * Introduction
 ** Preamble :ignore:
-Marine ecosystems provide humankind many resources which we depend on.
-Phytoplankton account for 70% of all photosynthesis on Earth, and marine
-agriculture is an important source of food worldwide. Data that can be used to
-evaluate the health of our oceans is therefore essential for us to understand
-the potential impact of climate change. Currently, however, methods of getting
-data only a global scale are low-resolution.
+Marine ecosystems provide humankind many resources which we depend on. Marine
+agriculture is an important source of food worldwide, and approximately 20% of
+the global population primarily depend on it. Data that can be used to evaluate
+the health of our oceans is therefore essential for us to understand the
+potential impacts of overfishing and climate change.
 
 This work examines one particular metric of interest: fish length. In context of
 the typical length of a species and the typical length within a population, fish
 length serves as a useful quantitative metric for determining the overall health
-of a fish population. Studies of fish length have also been used to quantify the
-impact of specific fishing policies\nbsp\cite{Heppell2012}.
+of a fish population. One of our main collaborators, Prof. Brice Semmens, has
+looked at the effects of fishing policies on a particular population of grouper,
+and used an annual fish length distribution as the primary method of studying
+their recovery\nbsp\cite{Heppell2012}. Fish length can also be used to convert to
+mass, from which the biomass of a population can be calculated.
 
-Current global fish length data typically comes from catch and release programs.
+Current global fish length data typically come from catch and release programs.
 In California, the California Collaborative Fisheries Research Program (CCFRP)
-is one such program. However, these expeditions incur a lot of overhead for
-relatively little gain, may be dangerous for the anglers\nbsp\cite{Rohner2011}, and
-also the fish being studied\nbsp\cite{Ramsay2009}. Thus a low effort, non-invasive
-approach is desirable.
+is one such program, which as of 2024, consists of over 1800 volunteer anglers.
+These anglers typically use hook-and-line procedures to catch the fish, from
+which length is measured directly with a tape measure before the fish is
+released. This length information is combined with metrics like catch per unit
+effort to estimate the biomass of a population. However, fishing takes time - in
+their most recent study, each examined location took 3 days to gather data
+for\nbsp\cite{Ziegler2024}. In addition, stress caused by barotrauma and air
+exposure can cause fish to
+
+In summary, these expeditions incur a lot of overhead
+for relatively little gain, may be dangerous for the anglers\nbsp\cite{Rohner2011},
+and also the fish being studied\nbsp\cite{Ramsay2009}. Thus a low effort,
+non-invasive approach is desirable.
+
+This approach also poses an issue for marine protected areas (MPAs), within
+which fishing may be restricted to certain species, or completely illegal
+outright. To study populations within these areas, adjacent fishing activities
+are often used to infer the abundance of a particular species, which
 
 Roving diver surveys, where a team of divers conducts a visual census of fish
-species and their lengths, are one such approach, though humans are only capable
-of estimating to within 20% of a fish's true length \cite{Harvey2001}. This
-skill also requires retraining as frequent as once every 6 months
-\cite{Bell1985}.
+species and their lengths, are an method used to study MPAs directly. Humans are
+only capable of estimating to within 20% of a fish's true length
+\cite{Harvey2001}. This skill also requires retraining as frequent as once every
+6 months \cite{Bell1985}.
 
 This work presents a collaboration with the Semmens Lab and the Reef
 Environmental Education Foundation (REEF): a device that can be used by any
@@ -357,7 +373,7 @@ theoretically any camera would work.
 
 To fit our pinhole camera assumption, we must have some way to rectify images
 taken by the camera. Distortions from Snell's law make this impossible using the
-standard camera model\nbsp\ref{Agrawal2012}.
+standard camera model\nbsp\cite{Agrawal2012}.
 
 We add a corrective optic in order to correct these distortions. Developed by
 Backscatter, this corrective optic is designed to attach to the Olympus's
@@ -749,8 +765,13 @@ Section\nbsp[[sec:field-calibration-testing]].
 ** Diver Operation
 In the field, after calibrating the laser, operating the camera is fairly
 straightforward. The diver will take a picture of nearby fish as normal, with
-the restriction that the laser dot must be trained on the fish. A full field
-manual is provided in Appendix [[sec:user-manual]].
+the restriction that the laser dot must be trained on the fish.
+
+We expect two conditions in order to get an accurate measurement: we expect that
+the diver be able to orient and maneuver them selves
+
+
+A full field manual is provided in Appendix [[sec:user-manual]].
 ** Data Offloading
 After the data has been collected, the operator must offload the data to be
 processed externally. We are currently in the process of developing software in
@@ -835,16 +856,20 @@ been used for these tests. Fred is shown in Figure \ref{fig:fred}.
 #+LABEL: fig:fred
 [[file:images/fred.jpg]]
 
-Figure\nbsp\ref{} demonstrates measurements of our fake fish, in this case, Fred,
-during a pool test. We can see that with varying distances away from Fred, the
-estimate remains relatively consistent, and we always underestimate Fred's
-length. There are several potential sources of error that are discussed below.
+In addition to Fred et al, another length reference we use is the flat surface
+of an aluminum box, across which we mark a distance of 15cm.
 
-#+ATTR_LATEX: :scale 0.05
+Figure\nbsp\ref{fig:measurements} demonstrates measurements of our fake fish, in
+this case, Fred, and the box during a pool test. We can see that with varying
+distances away from Fred, the estimate remains relatively consistent, and we
+always underestimate Fred's length. There are several potential sources of error
+that are discussed below.
+
+#+ATTR_LATEX: :scale 0.8
 #+ATTR_ORG: :width 200px
-#+CAPTION: Measurements of Fred, plotted over estimated distances away from the camera.
-#+LABEL: fig:fred
-[[file:images/fred-measurements.jpg]]
+#+CAPTION: Measurements of Fred and the box, plotted over estimated distances away from the camera.
+#+LABEL: fig:measurements
+[[file:images/measurements.png]]
 
 
 **** Object Thickness
@@ -1005,7 +1030,7 @@ the laser mounts to become brittle, and they have been shown to break after a
 month or two of operation. Current work is being done to create these mounts out
 of a different material which does not absorb water and resists corrosion.
 
-These have typically failed after
+These have typically failed after a month of use.
 
 **** Laser Pointer
 The laser pointers themselves have also been known to fail. There are two main
