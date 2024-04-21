@@ -101,8 +101,9 @@ and generates these data using citizen science efforts. We mount a standard
 waterproof laser on a consumer waterproof camera, and obtain fish length purely
 from an image of the fish with the laser dot on it. This work focuses primarily
 on the extraction of the fish's length from the image, using a priori knowledge
-of laser parameters. We show that the accuracy of this solution is better than
-visual estimation, to within 15% of the fish's true length.
+of laser parameters, as well as the calibration procedures from which this
+knowledge is determined. We show that the accuracy of this solution is better
+than visual estimation, to within 15% of the fish's true length.
 
 #+END_dissertationabstract
 #+LATEX: \mainmatter
@@ -155,12 +156,25 @@ only capable of estimating to within 20% of a fish's true length
 improved, and requires retraining as frequent as once every 6 months
 \cite{Bell1985}.
 
-This work presents a collaboration with the Semmens Lab and the Reef
-Environmental Education Foundation (REEF): a device that can be used by any
-recreational diver made from off-the-shelf components, that produces estimations
-more accurately than a human being can. Dubbed Fishsense Lite, this device
-incorporates laser triangulation techniques to allow divers to take images of a
-fish and use them to estimate fish length.
+The effort described within this work relates to our solution to the above
+problem -- a device that we call Fishsense Lite. Fishsense Lite relies on a
+single laser as depth reference in order to measure the length of a fish from a
+captured image, and due to the simplicity and accessibility of the hardware
+construction, it can be utilized by recreational divers to get much larger data
+coverage.
+
+Images taken by this device will consist of a fish with a laser dot, as shown in
+Figure\nbsp\ref{fig:example-fish-picf}. One can imagine that as the fish gets further
+away from the camera, the apparent size of the fish decreases, and the position
+of the laser dot on the image changes. We leverage both of these observations to
+obtain the length of the fish, as described in Chapter\nbsp[[sec:algorithms]].
+
+#+ATTR_LATEX: :scale 0.05
+#+ATTR_ORG: :width 200px
+#+CAPTION: An example fish image taken with the camera unit.
+#+LABEL: fig:example-fish-pic
+[[file:images/fred.jpg]]
+
 
 *** Notes from Brice :noexport:
 Tracking length distributions can give information about frequency without
@@ -168,24 +182,11 @@ having to count all the fish in the population
 
 Frequency is important since we want to be able to fish sustainably
 
-** Problem Specification :noexport:
-This work will target the Fishsense Lite - the device that consists of the laser
-triangulation technique as well as the software to process images taken by the
-physical device.
-
-The length measurement algorithm makes the following assumptions about the
-object of interest:
-1. The object is planar.
-2. The object is parallel with the image plane.
-3. The laser dot is visible and lies in the same plane as the object.
-
 ** Problem Specification
-The effort described within this work relates to our solution to the above
-problem -- a device that we call Fishsense Lite. Fishsense Lite relies on a
-single laser as depth reference in order to measure the length of a fish from a
-captured image, and due to the simplicity and accessibility of the hardware
-construction, it can be utilized by recreational divers to get much larger data
-coverage. The entire system consists of both the
+The rest of this work will be focused on the algorithms behind the length
+extraction, specifically how the laser parameters are determined, how these are
+use to calculate the coordinates of the laser dot in physical space, and how
+that in turn is used to get the fish length.
 
 Our desired accuracy goal with this system is only within 20% of the true fish
 length -- for this type of data, quantity is desired over quality, especially if
@@ -312,6 +313,7 @@ distance apart up to 15m from the source, which can be challenging to do in a
 field setting.
 
 * Algorithm Details
+<<sec:algorithms>>
 ** Preamble :ignore:
 Our primary goals with this system are to reduce the cost to gather fish length
 data, and to make the practice more accessible to recreational divers. To
@@ -648,9 +650,9 @@ J_{g\ell}^i &= \begin{bmatrix}
 
 ***** Derivation of Jacobian
 <<sec:jacobian-derivation>>
-Recall the function $\vb{g}(\alpha,\ell)$:
+Recall the function $\mathbf{g}(\alpha,\ell)$:
 \begin{equation*}
-    \vb{g}(\alpha,\ell) = \begin{bmatrix}
+    \mathbf{g}(\alpha,\ell) = \begin{bmatrix}
         \lVert p_1 - \ell\rVert\alpha + \ell \\
         \lVert p_2 - \ell\rVert\alpha + \ell \\
         \vdots \\
@@ -677,8 +679,8 @@ Calculating $J_{g\alpha}$ is fairly trivial, as the function is linear in $\alph
 
 We can take the Jacobian with respect to $\ell$ by taking the Jacobians of each row individually. For a particular image $i$ we have:
 \begin{align*}
-    \vb{g}_i(\alpha,\ell) &= \lVert p_i - \ell \rVert \alpha + \ell \\
-    \frac{\partial}{\partial\ell}\vb{g}_i(\alpha,\ell) &= -\frac{1}{\lVert p_i - \ell\rVert}\left[\begin{smallmatrix}
+    \mathbf{g}_i(\alpha,\ell) &= \lVert p_i - \ell \rVert \alpha + \ell \\
+    \frac{\partial}{\partial\ell}\mathbf{g}_i(\alpha,\ell) &= -\frac{1}{\lVert p_i - \ell\rVert}\left[\begin{smallmatrix}
         (p_x - \ell_x)\alpha_x+1 & (p_y - \ell_y)\alpha_x & (p_z - \ell_z)\alpha_x \\(p_x - \ell_x)\alpha_y & (p_y - \ell_y)\alpha_y + 1 & (p_z - \ell_z)\alpha_y \\p_x - \ell_x)\alpha_z & (p_y - \ell_y)\alpha_z & (p_z - \ell_z)\alpha_z + 1
     \end{smallmatrix}\right] \\
         &= I - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T
