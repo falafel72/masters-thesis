@@ -125,6 +125,7 @@ and used an annual fish length distribution as the primary method of studying
 their recovery\nbsp\cite{Heppell2012}. Fish length can also be used to convert to
 mass, from which the biomass of a population can be calculated.
 
+** Current Methods for Fish Length Studies
 Current global fish length data typically come from catch and release programs.
 In California, the California Collaborative Fisheries Research Program (CCFRP)
 is one such program, which as of 2024, consists of over 1800 volunteer anglers.
@@ -134,23 +135,25 @@ released. This length information is combined with metrics like catch per unit
 effort to estimate the biomass of a population. However, fishing takes time - in
 their most recent study, each examined location took 3 days to gather data
 for\nbsp\cite{Ziegler2024}. In addition, stress caused by barotrauma and air
-exposure can cause fish to
-
-In summary, these expeditions incur a lot of overhead
-for relatively little gain, may be dangerous for the anglers\nbsp\cite{Rohner2011},
-and also the fish being studied\nbsp\cite{Ramsay2009}. Thus a low effort,
-non-invasive approach is desirable.
+exposure can cause fish to be less able to find food or evade predators, which
+reduces their life expectancy\nbsp\cite{Campbell2010}. In summary, these expeditions
+incur a lot of overhead for relatively little gain, may be dangerous for the
+anglers\nbsp\cite{Rohner2011}, and also the fish being studied\nbsp\cite{Ramsay2009, Campbell2010}.
+Thus a low effort, non-invasive approach is desirable.
 
 This approach also poses an issue for marine protected areas (MPAs), within
 which fishing may be restricted to certain species, or completely illegal
 outright. To study populations within these areas, adjacent fishing activities
-are often used to infer the abundance of a particular species, which
+are often used to infer the abundance of a particular species.
 
-Roving diver surveys, where a team of divers conducts a visual census of fish
-species and their lengths, are an method used to study MPAs directly. Humans are
+A non-invasive alternative is the roving diver survey, where a team of divers
+conducts a visual census of fish species and their lengths within the MPA.
+Sometimes divers may use a T-bar as a length reference. However, measurements
+obtained purely from visual estimation are naturally imprecise -- humans are
 only capable of estimating to within 20% of a fish's true length
-\cite{Harvey2001}. This skill also requires retraining as frequent as once every
-6 months \cite{Bell1985}.
+\cite{Harvey2001}. This is also a skill that must be honed in order to be
+improved, and requires retraining as frequent as once every 6 months
+\cite{Bell1985}.
 
 This work presents a collaboration with the Semmens Lab and the Reef
 Environmental Education Foundation (REEF): a device that can be used by any
@@ -177,13 +180,12 @@ object of interest:
 3. The laser dot is visible and lies in the same plane as the object.
 
 ** Problem Specification
-This work will target the Fishsense Lite - specifically, the reasoning behind
-the hardware setup, the algorithms required to go from fish image to fish
-length, and the preliminary procedures required to operate the device.
-
-We expect fish images to be of the form given by
-Figure\nbsp\ref{}, where the entire body of the fish is visible in the frame, and a
-laser dot is visible on the fish.
+The effort described within this work relates to our solution to the above
+problem -- a device that we call Fishsense Lite. Fishsense Lite relies on a
+single laser as depth reference in order to measure the length of a fish from a
+captured image, and due to the simplicity and accessibility of the hardware
+construction, it can be utilized by recreational divers to get much larger data
+coverage. The entire system consists of both the
 
 Our desired accuracy goal with this system is only within 20% of the true fish
 length -- for this type of data, quantity is desired over quality, especially if
@@ -309,9 +311,6 @@ Calibration of the system also involves verifying that the beams are the same
 distance apart up to 15m from the source, which can be challenging to do in a
 field setting.
 
-*** Laser Rangefinding
-While the technology we use here is novel to fish length measurement, it has
-been used for a wide variety of other purposes.
 * Algorithm Details
 ** Preamble :ignore:
 Our primary goals with this system are to reduce the cost to gather fish length
@@ -387,6 +386,15 @@ one metric we used was the mean squared error given by OpenCV's
 with the dome port on, and the images taken without the dome port showed a
 significantly higher amount of distortion.
 
+*** Laser Pointer
+The laser pointer is another off the shelf component. Many divers own laser
+pointers in order to gesture to others. Ideally, the laser is mounted rigidly to
+the camera -- in practice, due to manufacturing defects and small perturbations,
+the laser moves enough to cause significant error in the measurements. See
+Section\nbsp[[sec:laser-calibration]] for how this issue is solved.
+
+The color of the laser also has an effect, discussed in Section\nbsp[[sec:laser-comparison]].
+
 ** Quantites and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to
 the right in the image, the $y$ axis points downward in the image, and the $z$
@@ -432,8 +440,8 @@ Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one p
 #+LABEL: fig:diag
 #+begin_figure
     \centering
-    \begin{tikzpicture}
-    [cube/.style={very thick,black},
+    \begin{tikzpicture}[
+        cube/.style={very thick,black},
 			grid/.style={very thin,gray},
 			axis/.style={->,black,thick}];
 
@@ -611,7 +619,7 @@ x^{(k+1)} = x^{(k)} - (J_r^TJ_r)^{-1}J_r \mathbf{r}(x^{(k)})
 
 According to Equation \ref{eq:residual}, only the second term depends on our parameters, so we can rework our iterative step into
 \[
-x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(\alpha,\ell)
+x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(x)
 \]
 
 
@@ -698,7 +706,7 @@ $xy$ plane to be $\ell$.
 - [ ] the laser hardware setup rationale
 - [X] pinhole camera model ("optical center")
 - [X] the image plane
-- [ ] camera calibration
+- [X] camera calibration
 - [X] laser field calibration
 ** Conclusion :ignore:
 In this chapter, we have discussed the assumptions we make for this system to
@@ -950,8 +958,15 @@ higher than length measurements obtained in pool water.
 
 *** Different Lasers
 <<sec:laser-comparison>>
-We discovered two significant factors that influenced our decision to use one
-laser over the other.
+
+The bulk of our experiments have been with two main laser pointer models: the
+Innovative Scuba Concepts laser
+pointer\footnote{https://dealer.innovativescuba.com/tc-101-aluminum-underwater-laser-pointer.html},
+and the Shark
+Laser\footnote{https://waterprooflaser.com/contents/en-us/d22\_TO-ORDER.html}.
+Both lasers are rated for less than 5mW of power. The former model emits light
+at 700nm, and the latter at 532nm. We discovered two significant factors that
+influenced our decision to use one laser over the other.
 
 The first was attenuation - within the visible spectrum, water attenuates light
 with longer wavelengths significantly more than shorter wavelengths, and so red
@@ -1258,14 +1273,7 @@ better withstand saltwater and remain rigid.
 **** Annotations :noexport:
 Ask Adrian if it's ok to include his work here.
 *** Laser Pointer
-The bulk of our experiments have been with two main laser pointer models: the
-Innovative Scuba Concepts laser
-pointer\footnote{https://dealer.innovativescuba.com/tc-101-aluminum-underwater-laser-pointer.html},
-and the Shark
-Laser\footnote{https://waterprooflaser.com/contents/en-us/d22\_TO-ORDER.html}.
-Both lasers are rated for less than 5mW of power. The former model emits light
-at 700nm, and the latter at 532nm. Section\nbsp[[sec:laser-comparison]] discusses
-factors where one model may perform better than another.
+ Section\nbsp[[sec:laser-comparison]] discusses factors where one model may perform better than another.
 
 ** Laser Triangulation
 *** Overview :ignore:
