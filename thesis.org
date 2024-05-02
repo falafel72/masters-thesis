@@ -1,6 +1,6 @@
 #+OPTIONS: toc:nil H:5
 #+SETUPFILE: setup.org
-#+TITLE: Laser-Powered Citizen Science: Enhancing Fish Length Measurement in Marine Environments with Underwater Imaging
+#+TITLE: Methods for In-Situ Fish Length Measurement with a Single Laser and Camera to Support Citizen Science
 #+AUTHOR: Kyle Sirong Hu
 #+LATEX_HEADER: \degree{Intelligent Systems, Robotics and Control}{M.S}
 #+LATEX_HEADER: \degreeyear{2024}
@@ -80,8 +80,8 @@ Game communities, for allowing me to grow emotionally that much more.
 
 Finally, thank you to my parents, whose continuous support has allowed the
 opportunity to do all of this.
-
 #+END_acknowledgements
+
 * Abstract                                                           :ignore:
 #+BEGIN_dissertationabstract
 Ecologists are interested in studying fish length distributions as a metric for
@@ -98,7 +98,7 @@ sufficiently accurate.
 
 We are developing a different method that can be used by recreational divers,
 and generates these data using citizen science efforts. We mount a standard
-waterproof laser on a consumer waterproof camera, and obtain fish length purely
+laser pointer on a consumer waterproof camera, and obtain fish length purely
 from an image of the fish with the laser dot on it. This work focuses primarily
 on the extraction of the fish's length from the image, using a priori knowledge
 of laser parameters, as well as the calibration procedures from which this
@@ -201,12 +201,6 @@ comparing against other handheld systems and manual visual estimation, and will
 not be considering passive data collection methods. More detail about existing
 technologies is provided in Section\nbsp[[sec:existing-technologies]].
 
-*** Outline :noexport:
-- what part of the overall system are we discussing in the document?
-- what are the accuracy bounds of our desired data?
--
-- what particular technologies are we comparing against?
-
 ** Related Work
 *** Underwater Ranging
 #+ATTR_LATEX: :float sideways :align |c||c|c|c|c| :width 70%
@@ -305,13 +299,17 @@ law distortions, a stereo camera approach would be impossible.
 Our collaborators have also tried using a laser caliper system to measure fish
 length. This system has been used to document the recovery of a population of
 Nassau Grouper over 7 years, in order to quantify the effectiveness of recovery
-efforts\nbsp\cite{Heppel2012}. While such a system was also demonstrated to be more
+efforts\nbsp\cite{Heppell2012}. While such a system was also demonstrated to be more
 effective than visual estimation, it also requires manufacturing a
 custom-machined aluminum mount, which is not easily accessible for most diverse.
 Calibration of the system also involves verifying that the beams are the same
 distance apart up to 15m from the source, which can be challenging to do in a
 field setting.
 
+** Conclusion
+\\
+So far, we have gone over the motivation and background for this project. In the
+next chapter we will discuss the primary principles of the laser algorithm.
 * Algorithm Details
 <<sec:algorithms>>
 ** Preamble :ignore:
@@ -361,7 +359,6 @@ meaning that Snell's law causes incoming light to refract. Measures to mitigate
 this problem are detailed in Section\nbsp[[sec:backscatter]].
 ** Hardware Setup
 *** Overview :ignore:
-
 *** Camera
 For our own testing, we use an Olympus TG6, a common camera for divers to own
 for underwater photography. This camera itself is waterproof, though we use
@@ -374,13 +371,13 @@ theoretically any camera would work.
 
 To fit our pinhole camera assumption, we must have some way to rectify images
 taken by the camera. Distortions from Snell's law make this impossible using the
-standard camera model\nbsp\cite{Agrawal2012}.
+standard camera model\nbsp\cite{Agrawal2012}, hence we add a corrective optic in
+order to correct these distortions.
 
-We add a corrective optic in order to correct these distortions. Developed by
-Backscatter, this corrective optic is designed to attach to the Olympus's
-underwater housing, and is typically used to widen the field of view for
-underwater photographers. Future work is required for us to understand how to
-model these Snell's law distortions better so we can ultimately remove it.
+Developed by Backscatter, this corrective optic is designed to attach to the
+Olympus's underwater housing, and is typically used to widen the field of view
+for underwater photographers. Future work is required for us to understand how
+to model these Snell's law distortions better so we can ultimately remove it.
 
 In order to verify that the pinhole model was sufficient for this camera system,
 one metric we used was the mean squared error given by OpenCV's
@@ -398,26 +395,36 @@ Section\nbsp[[sec:laser-calibration]] for how this issue is solved.
 The color of the laser also has an effect, discussed in Section\nbsp[[sec:laser-comparison]].
 
 ** Quantites and Conventions
-Our axis conventions in this chapter are as follows: the $x$ axis points to
-the right in the image, the $y$ axis points downward in the image, and the $z$
-axis points forward, away from the camera. This system has the added bonus that
-the $x$ and $y$ axes coincide with the directions of pixel coordinates. The
-origin will be defined at the camera's optical center.
+Our axis conventions in this chapter are as follows: the $x$ axis points to the
+right in the image, the $y$ axis points downward in the image, and the $z$ axis
+points forward, away from the camera. This system has the added bonus that the
+$x$ and $y$ axes coincide with the directions of pixel coordinates. The origin
+will be defined at the camera's optical center. This is commonly known as the
+``optical frame''. We also designate a point $O$ to be the orgin of this
+coordinate system.
 
 Given a particular fish image, we assume that we are able to trivially determine
-the size of the fish in pixels. Figure\nbsp\ref{} shows a diagram of both the live
-fish and its projection onto the image plane. If the apparent size of the fish
-is known, using similar triangles we are able to obtain the following
-relationship:
-\begin{equation}
-L = \frac{dxw}{f} \label{eq:length-from-depth}
-\end{equation}
+the size of the fish in pixels. Figure\nbsp\ref{fig:pinhole-fish} shows a diagram of both the live
+fish and its projection onto the image plane.
+#+ATTR_LATEX: :scale 0.4
+#+ATTR_ORG: :width 200px
+#+CAPTION: Pinhole diagram of the fish with it's image projection.
+#+label: fig:pinhole-fish
+[[file:images/pinhole-fish.png]]
+
+
 
 Here $x$ represents the size of the fish in pixels, $w$ represents the ``pixel
 pitch'' (distance between two pixels on the image sensor), and $f$ represents
 the focal length of the camera. Note that the product $xw$ can be interpreted as
-the size of the fish on the image plane. Our only unknown on the right hand side
-is $d$, the distance of the fish from the camera. Most of the challenge in this
+the size of the fish on the image plane. If the apparent size of the fish is
+known, using similar triangles we are able to obtain the following relationship:
+\begin{equation}
+L = \frac{Dxw}{f} \label{eq:length-from-depth}
+\end{equation}
+
+Our only unknown on the right hand side
+is $D$, the distance of the fish from the camera. Most of the challenge in this
 system comes from obtaining this measurement.
 
 We assume that we can describe precisely how the laser is positioned relative to
@@ -426,7 +433,7 @@ the camera. More precisely, we define parameters $\ell$ and $\alpha$ , where $\e
 vector of unit length that points in the direction of the laser beam. The laser
 beam can therefore be described by a ray with scale factor $\lambda$:
 \[
-\text{laser} = \ell + \lambda\alpha
+\vec{\ell p} = \ell + \lambda\alpha
 \]
 
 Note that our restriction that $\ell$ lies purely in the $xy$ plane means that the
@@ -476,8 +483,8 @@ Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one p
 
 ** Finding the Distance to the Fish
 We assume that this laser beam intersects the fish at an unknown point $p$. As
-imaged by the camera, we know that this laser dot will have known pixel
-coordinates $\mathfrak{p}$. This corresponds to a vector $p_\text{image}$ on the
+imaged by the camera, that this laser dot will have known pixel
+coordinates $\mathfrak{p}$. This corresponds to a point $p_\text{image}$ on the
 image plane, defined as
 \[
 p_\text{image} = \begin{bmatrix}
@@ -495,30 +502,40 @@ v = \frac{p_\text{image}}{\lVert p_\text{image}\rVert}
 
 This creates two rays that converge toward $p$: the laser beam, and the ray from
 the camera that passes through $\mathfrak{p}$ on the image plane. By projecting
-both of these rays outward until they intersect, we can identify where $p$ is.
+both $\vec{\ell p}$ and $\vec{O v}$ out until they intersect, we can identify where
+$p$ is.
 
-More formally, we define scale factors $\lambda_1$ and $\lambda_2$ such that
+More specifically, we define scale factors $\lambda_1$ and $\lambda_2$ such that
 \[
 \ell + \lambda_1\alpha = \lambda_2v
 \]
 
 We can refactor the above relationship to be the form
 
-\begin{equation*}
+\begin{equation}
 \begin{bmatrix}
--\alpha & -v
+\alpha & -v
 \end{bmatrix}
 \begin{bmatrix}
 \lambda_1 \\
 \lambda_2
 \end{bmatrix}
-+ \ell = 0
-\end{equation*}
+= -\ell
+\label{eq:find-laser}
+\end{equation}
 
-Due to pixel quantization, the two rays may not line up perfectly, so we can
-obtain the least-squares solution, i.e. the solution to the minimization problem
+In practice, however, this relationship does not necessarily hold, because the
+laser dot as observed in the image may be in a particular pixel that does not
+match up perfectly with where the ray $\vec{Ov}$ intersects with the image
+plane. This causes the rays to come very close to each other, but not touch,
+meaning Equation\nbsp\ref{eq:find-laser} has no solution.
+
+
+We can, however, obtain $\lambda_1$ and $\lambda_2$ values that minimize the difference
+between the left and right hand sides -- this is the least squares solution,
+i.e. the solution to the minimization problem
 \[
-\text{argmin}_{x} \lVert Ax - b \rVert^2
+\text{argmin}_{x} \lVert Ax - b \rVert^2,
 \]
 
 where $A \in \mathbb{R}^{m\times n}$, $m > n$, and $x,b\in \mathbb{R}^{n}$. In our case, we
@@ -545,8 +562,6 @@ only require one of them, so we use $\lambda_2$:
  \lambda_2 = \frac{-\alpha^T \ell \alpha^T v + v^T \ell}{1 - (\alpha^T v)^2}
 \]
 
-Experiments from using $\lambda_1$ or $\lambda_2$ are show in Section\nbsp\ref{}.
-
 Obtaining $\lambda_1$ or $\lambda_2$ allows us to obtain $p$, and the z-component of $p$,
 along with Equation\nbsp\ref{eq:length-from-depth}, gives us the corresponding fish
 length.
@@ -572,13 +587,17 @@ the laser dot point to give us the following series of equations:
 p_i = \lVert p_i - \ell \rVert\alpha + \ell
 \label{eq:problem}
 \end{equation}
+The above equation states that the point $p_i$ should be able to be retrieved
+from scaling the laser ray out by a factor determined by the difference between
+$p_i$ and $\ell$.
 
-We stack these points into a single vector, defining the following; \[
-\mathbf{p} = \begin{bmatrix} p_1 \\ p_2 \\ \vdots \\ p_n \end{bmatrix} \] We
-have a relationship that relates our known quantities $p_i$ and unknown
-quantities $\alpha$ and $\ell$, though in this case the relationship is
-non-linear. We must therefore choose a non-linear optimization method to find
-the best candidates for $\alpha$ and $\ell$ that satisfy this.
+We stack these points into a single vector, defining the following;
+\[
+\mathbf{p} = \begin{bmatrix} p_1 \\ p_2 \\ \vdots \\ p_n \end{bmatrix}
+\]
+
+
+
 
 First we define a parameter vector $x$ that contains all of our parameters:
 \[
@@ -589,22 +608,16 @@ x = \begin{bmatrix}
 \end{bmatrix}
 \]
 
-We must first define a function in terms of our parameters which we want to
-minimize:
-
-\[
-g_i(x) = \lVert p_i - \ell \rVert \alpha + \ell
-\]
-
-We then define the vector function $F(\alpha,\ell)$ as follows:
-\[
-\mathbf{g}(x) = \begin{bmatrix}
-g_1(x) \\
-g_2(x) \\
-\vdots \\
-g_n(x)
-\end{bmatrix}
-\]
+We also define a function in terms of our parameters for the right hand side:
+\begin{align*}
+        g_i(x) &= \lVert p_i - \ell \rVert \alpha + \ell \\
+        \mathbf{g}(x) &= \begin{bmatrix}
+        g_1(x) \\
+        g_2(x) \\
+        \vdots \\
+        g_n(x)
+        \end{bmatrix}
+\end{align*}
 
 We then formulate this in terms of the following optimization problem:
 \begin{align}
@@ -612,18 +625,29 @@ We then formulate this in terms of the following optimization problem:
 \mathbf{r}(x) = \mathbf{p} - \mathbf{g}(x) \label{eq:residual}
 \end{align}
 
-The method we currently choose to solve this is the Gauss-Newton method, which involves the following steps:
+We have a relationship that relates our known quantities $p_i$ and unknown
+quantities $\alpha$ and $\ell$, though in this case the relationship is non-linear. We
+must therefore choose a non-linear optimization method to find the best
+candidates for $\alpha$ and $\ell$ that satisfy this.
+
+The method we currently choose is the Gauss-Newton method, which
+involves the following steps:
 1. Find the Jacobian $J_r$ of the minimizing function w.r.t to $x$.
 2. Take iterative steps of the following form:
 \[
 x^{(k+1)} = x^{(k)} - (J_r^TJ_r)^{-1}J_r \mathbf{r}(x^{(k)})
 \]
 
-According to Equation \ref{eq:residual}, only the second term depends on our parameters, so we can rework our iterative step into
+According to Equation \ref{eq:residual}, only the second term depends on our
+parameters, so we can rework our iterative step into
 \[
 x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(x)
 \]
 
+Here we set $x^{(0)}$ to a rough estimate of where the laser is with respect to
+the camera, taken with a ruler. For our particular test system, the laser's
+starting point is assumed to be $-4$cm in the x direction and $-11$cm in the $y$
+direction, with the laser parallel to the camera axis.
 
 There are many other methods of this kind that we could have used, such as the
 Levenberg-Marquardt algorithm, though from our experiments this calibration
@@ -650,9 +674,9 @@ J_{g\ell}^i &= \begin{bmatrix}
 
 ***** Derivation of Jacobian
 <<sec:jacobian-derivation>>
-Recall the function $\mathbf{g}(\alpha,\ell)$:
+Recall the function $\mathbf{g}(x)$:
 \begin{equation*}
-    \mathbf{g}(\alpha,\ell) = \begin{bmatrix}
+    \mathbf{g}(x) = \begin{bmatrix}
         \lVert p_1 - \ell\rVert\alpha + \ell \\
         \lVert p_2 - \ell\rVert\alpha + \ell \\
         \vdots \\
@@ -670,10 +694,10 @@ We can split $J_g$ into two block columns representing the Jacobians with respec
 Calculating $J_{g\alpha}$ is fairly trivial, as the function is linear in $\alpha$:
 \begin{equation*}
     J_{g\alpha} = \begin{bmatrix}
-        \lVert p_1 - \ell\rVert I \\
-        \lVert p_2 - \ell\rVert I \\
+        \lVert p_1 - \ell\rVert I_{3\times3} \\
+        \lVert p_2 - \ell\rVert I_{3\times3}\\
         \vdots \\
-        \lVert p_n - \ell\rVert I
+        \lVert p_n - \ell\rVert I_{3\times3}
     \end{bmatrix}
 \end{equation*}
 
@@ -704,13 +728,12 @@ travels. Once $\alpha$ is obtained, we can choose a point $p_k$ such that $p_k$ 
 our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with the
 $xy$ plane to be $\ell$.
 
-** Missing pieces :noexport:
-- [ ] the laser hardware setup rationale
-- [X] pinhole camera model ("optical center")
-- [X] the image plane
-- [X] camera calibration
-- [X] laser field calibration
+This method can be performed much faster than the former method, though while
+developing our device we have suck to using the Hu method since the constraints
+and minimizing function are more explicit. Experiments comparing between the two
+methods can be found in Section [[sec:math-testing]].
 ** Conclusion :ignore:
+\\
 In this chapter, we have discussed the assumptions we make for this system to
 work, and outlined the algorithm for obtaining laser parameters, and using these
 to obtain the length of a fish. In the next chapter, we will discuss the
@@ -720,7 +743,7 @@ procedures required to operate this device.
 *** Camera Calibration
 In order to obtain parameters like the focal length and location of the
 principal point, we must perform calibration of the camera. This is done using
-Zhang's procedure\nbsp\ref{Zhang2000}, where many images of a checkerboard are
+Zhang's procedure\nbsp\cite{Zhang2000}, where many images of a checkerboard are
 taken, and parameters are found such that known dimensions and regularity of the
 checkerboard are satisfied.
 
@@ -778,16 +801,18 @@ straightforward. The diver will take a picture of nearby fish as normal, with
 the restriction that the laser dot must be trained on the fish.
 
 We expect two conditions in order to get an accurate measurement: we expect that
-the diver be able to orient and maneuver them selves
-
+the diver be able to orient and maneuver themselves such that the fish is
+perpendicular to the camera axis, and we expect the fish to be flat. If either
+of these conditions are violated, significant error is introduced.
 
 A full field manual is provided in Appendix [[sec:user-manual]].
 ** Data Offloading
 After the data has been collected, the operator must offload the data to be
 processed externally. We are currently in the process of developing software in
-order to perform this processing, though the details are out of scope of this
+order to perform this processing, though details are out of scope of this
 document.
 ** Conclusion :ignore:
+\\
 Herein we have summarized the procedures required to operate the Fishsense Lite
 camera module. The next chapter details how this camera module has been tested.
 * Testing
@@ -797,6 +822,10 @@ The data in this section were gathered from four locations, listed below.
 The vast majority of our data comes from Canyonview pool.
 **** Note :noexport:
 list of tests should go in an appendix
+*** Nathan Hui's Pool
+In times when Canyonview pool was unavailable, Nathan was kind enough for us to
+lend us his pool for testing. I would like to thank Nathan for allowing us to do
+so.
 *** La Jolla Kelp Forests
 In order to gain some insight into how this system would behave in real world
 conditions, we used this system on fish off the La Jolla coast. The author would
@@ -816,6 +845,7 @@ We used Fred as a reference object and took measurement photos from very close
 FSL-01. After this, divers conducted a roving survey, taking fish measurement
 images in the same area. Divers did not take images of the same individuals.
 
+*** Fred's Final Test :noexport:
 This was Fred's final test. According to our recorded logs, we know the following:
 #+BEGIN_QUOTE
 ``Anchor stuck, Fred was secured to anchor before ascent. Fred lost when anchor was retrieved.''
@@ -831,7 +861,7 @@ The water conditions in this region were much clearer than in the La Jolla Kelp
 forests, so despite the shorter attenuation of red lasers, the data from this
 test are predominantly generated using red lasers.
 
-Standard roving diver surveys were conducted in ??? different areas. On all
+Standard roving diver surveys were conducted in four different areas. On all
 dives, a Fishsense Lite camera unit, along with a stereo Go Pro pair, were used
 to measure fish lengths.
 ** Tests
@@ -918,7 +948,7 @@ section.
 We compare our checkerboard laser calibration procedure to our automated field
 laser calibration procedure. Figure\nbsp\ref{} demonstrates that the measurement
 accuracy obtained between these two methods is similar, though the field
-calibration procedure performs slightly worse. My current hypothesis is that the
+calibration procedure performs slightly worse. Our current hypothesis is that the
 largest source of error mainly comes from having significantly fewer data points
 with the dive slate as compared to the checkerboard, and that if as many images
 were taken with the dive slate as with the checkerboard, the measurement error
@@ -1071,6 +1101,7 @@ a big issue if such an angle was easily accessible. However, if the fish
 happened to be next to a rock at an angle, getting a good picture proved
 difficult.
 ** Conclusion :ignore:
+\\
 While this system still has many issues with durability and reliability, we have
 still shown that it is capable of obtaining fish lengths to within our desired
 error margins.
@@ -1126,13 +1157,52 @@ distortions caused by the port of the underwater housing.
 | 2024-02-26 |                                                                                                                            |
 | 2024-03-04 |                                                                                                                            |
 
-** Fishsense Lite User Manual
+** Fishsense Lite User Procedure
 <<sec:user-manual>>
+*** Setup
+1. Take the camera underwater and burp the lens. When reattaching the lens, ensure that it is tightly attached.  The lens needs to remain in the same position it originally calibrated.
+2. Turn on the laser by turning the back end clockwise.
+3. Take a validation photo using the method specified in Section
+
+*** Use
+1. When the laser is in use, aim it towards the center of the body mass of the fish. Ensure that the laser is not pointed directly toward a person.
+2. In order to image fish, it is not necessary to look through the camera's viewport.  If the laser is visible on the fish, it should also be visible in the camera.
+3. Refer to the appropriate camera manual for photo and video collection procedures. Take photos with fish as close to flat in the image as possible; otherwise, the length measurement may be inaccurate.
+
+*** Teardown
+1. When data collection is complete, turn off the laser.
+2. Offload data to a hard disk if necessary.
+
+*** Guidelines
+1. Do not use the zoom function on the camera. This changes the focal length, rendering our calibration useless.
+2. Avoid touching or moving the laser directly. Do not use the laser as a handle. The laser must be rigidly attached and unmoved for calibration values to hold true.
+3. The laser must be pointed directly at the fish, as close to its center of body mass as possible.
+4. The camera's optical axis should establish approximately a right angle with the vertical axis of the fish.
+5. Ensure the fish is located within the effective range of 0.5 to 5 meters from the camera. With 3 meters being the ideal distance.
+6. The fish must be illuminated.
+
+*** Camera Settings
+The following settings are the ones for which the camera was tested, and to keep the data consistent, we recommend that you use them as well. Unless specified, all these settings can be found by pressing the "OK" button.
+- Program auto (set the wheel to P)
+- Flash off
+- ISO-A 1600
+- Exposure bias 0
+- Burst mode
+- Underwater shallow white balance
+- ESP metering
+- Face priority off
+- Accessory off
+- JPEG mode underwater
+- Autofocus
+- Aspect ratio 4000 x 3000
+- Output format LF + raw
+- Still image stabilization on
+
 * Backmatter                                                         :ignore:
 \bibliographystyle{plain}
 \bibliography{fishsense}
 * Problem Motivation                                               :noexport:
-Scrapping this, it's too wordy 
+Scrapping this, it's too wordy
 
 I will begin describing the problem with some background on the work that
 Engineers for Exploration (E4E for short) does, as I think it provides important
