@@ -2,7 +2,7 @@
 #+SETUPFILE: setup.org
 #+TITLE: Methods for In-Situ Fish Length Measurement with a Single Laser and Camera to Support Citizen Science
 #+AUTHOR: Kyle Sirong Hu
-#+LATEX_HEADER: \degree{Intelligent Systems, Robotics and Control}{M.S}
+#+LATEX_HEADER: \degree{Electrical Engineering (Intelligent Systems, Robotics and Control)}{Master of Science}
 #+LATEX_HEADER: \degreeyear{2024}
 #+LATEX_HEADER: \chair{Professor Curt Schurgers}
 #+LATEX_HEADER: \cochair{Professor Ryan Kastner}
@@ -868,7 +868,9 @@ In order to fully simulate the purpose for which the device was intended, we use
 a dummy rainbow trout as a reference object. Each dummy is made from the same
 model, though different techniques have been used to make them negatively
 buoyant. Three generations of dummy fish, named Fred, George, and Ginny, have
-been used for these tests. Fred is shown in Figure \ref{fig:fred}.
+been used for these tests\footnote{If you would like to purchase a Weasley fish
+of your own, go to https://www.loftus.com/items/LF-0167}. Fred is shown in
+Figure \ref{fig:fred}.
 
 #+ATTR_LATEX: :scale 0.05
 #+ATTR_ORG: :width 200px
@@ -907,7 +909,7 @@ distances away from Fred, the estimate remains relatively consistent, and we
 always underestimate Fred's length. The primary sources of error have been due
 to faulty calibration or issues with mount design. Previous datasets that show
 error have been consistent, and according to
-Equation\nbsp\ref{eq:length-from_depth}, the factors that can create a consistent
+Equation\nbsp\ref{eq:length-from-depth}, the factors that can create a consistent
 error include pixel pitch $w$ and focal length $f$.
 
 #+ATTR_LATEX: :scale 0.8
@@ -1185,12 +1187,12 @@ allowing us to use stereo cameras with Snell's law distortions.
 | 2023-04-05 | Repeat of both camera calibration and laser calibration                                                                    |
 | 2023-04-12 | Quantify errors of length measurement from both object tilt and thickness                                                  |
 | 2023-04-19 | Collect length-referenced data for ground-truth comparison                                                                 |
-| 2023-05-03 | Evaluate deviation in laser calibration parameters after travel (nathan's house)                                           |
-| 2023-05-08 | Obtain laser parameters with new mount (nathan's house)                                                                    |
-| 2023-07-13 | Calibrate FSL-01 camera and laser  (nathan's house)                                                                        |
-| 2023-07-29 | Recalibrate and determine whether FSL-01 has maintained calibration after ocean test (nathan's house)                      |
-| 2023-08-07 | Camera calibrations for FSL-02, 03, 04, 05, 06 and 07 (nathan's house)                                                     |
-| 2023-08-14 | Laser calibrations for FSL-02, 03, 04, 05, 06 and 07 (nathan's house)                                                      |
+| 2023-05-03 | Evaluate deviation in laser calibration parameters after travel (Nathan's house)                                           |
+| 2023-05-08 | Obtain laser parameters with new mount (Nathan's house)                                                                    |
+| 2023-07-13 | Calibrate FSL-01 camera and laser  (Nathan's house)                                                                        |
+| 2023-07-29 | Recalibrate and determine whether FSL-01 has maintained calibration after ocean test (Nathan's house)                      |
+| 2023-08-07 | Camera calibrations for FSL-02, 03, 04, 05, 06 and 07 (Nathan's house)                                                     |
+| 2023-08-14 | Laser calibrations for FSL-02, 03, 04, 05, 06 and 07 (Nathan's house)                                                      |
 | 2023-08-18 | Recalibration of laser mounts for all camera systems due to faulty mechanical design. First testing of slate calibration   |
 | 2023-10-28 | Flat port data                                                                                                             |
 | 2023-11-10 | Trial for obtaining more fine-grain length data for different tilt angles                                                  |
