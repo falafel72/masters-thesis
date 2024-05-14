@@ -303,7 +303,7 @@ Calibration of the system also involves verifying that the beams are the same
 distance apart up to 15m from the source, which can be challenging to do in a
 field setting.
 
-** Conclusion
+** Conclusion :ignore:
 \\
 So far, we have gone over the motivation and background for this project. In the
 next chapter we will discuss the primary principles of the laser algorithm.
@@ -324,7 +324,7 @@ setup. Figure\nbsp\ref{fig:fsl} shows an example of one such camera system.
 [[file:images/fishsense-lite-system.jpg]]
 
 Our system relies on the diver taking images with the laser beam pointed on the
-fish. Purely from the image, as well as a priori knowledge of the laser beam
+fish. With just the image, as well as a priori knowledge of the laser beam
 parameters, we can then use this to obtain a length of the fish within the
 image.
 
@@ -391,7 +391,7 @@ Section\nbsp[[sec:laser-calibration]] for how this issue is solved.
 
 The color of the laser also has an effect, discussed in Section\nbsp[[sec:laser-comparison]].
 
-** Quantites and Conventions
+** Quantities and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to the
 right in the image, the $y$ axis points downward in the image, and the $z$ axis
 points forward, away from the camera. This system has the added bonus that the
@@ -409,8 +409,6 @@ fish and its projection onto the image plane.
 #+label: fig:pinhole-fish
 [[file:images/pinhole-fish.png]]
 
-
-
 Here $x$ represents the size of the fish in pixels, $w$ represents the ``pixel
 pitch'' (distance between two pixels on the image sensor), and $f$ represents
 the focal length of the camera. Note that the product $xw$ can be interpreted as
@@ -423,6 +421,13 @@ L = \frac{Dxw}{f} \label{eq:length-from-depth}
 Our only unknown on the right hand side is $D$, the distance of the fish from
 the camera. Most of the challenge in this system comes from obtaining this
 measurement.
+
+Note that the above equation makes the following assumptions:
+1. The fish is parallel with the image plane.
+2. The laser dot is at the same depth as head and tail points on the fish.
+
+In practice, neither of these are always, if ever, true, and the implications
+of this are discussed more in Chapter [[sec:testing]].
 
 We assume that we can describe precisely how the laser is positioned relative to
 the camera. More precisely, we define parameters $\ell$ and $\alpha$ , where $\ell$ is the
@@ -442,7 +447,7 @@ scope of this document.
 
 Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one place.
 
-#+CAPTION: Diagram demonstrating known quantities. Laser shown in green, fish plane shown in red, image sensor shown in gray.
+#+CAPTION: Diagram demonstrating known quantities. Laser shown in green, fish plane shown in red, image plane shown in gray.
 #+LABEL: fig:diag
 #+begin_figure
     \centering
@@ -479,6 +484,7 @@ Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one p
 #+end_figure
 
 ** Finding the Distance to the Fish
+<<sec:distance-finding>>
 We assume that this laser beam intersects the fish at an unknown point $p$. As
 imaged by the camera, that this laser dot will have known pixel
 coordinates $\mathfrak{p}$. This corresponds to a point $p_\text{image}$ on the
@@ -638,12 +644,12 @@ x^{(k+1)} = x^{(k)} - (J_r^TJ_r)^{-1}J_r \mathbf{r}(x^{(k)})
 According to Equation \ref{eq:residual}, only the second term depends on our
 parameters, so we can rework our iterative step into
 \[
-x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(x)
+x^{(k+1)} = x^{(k)} + (J_g^{T}J_g)^{-1}J_{g}\mathbf{g}(x^{(k)})
 \]
 
 Here we set $x^{(0)}$ to a rough estimate of where the laser is with respect to
 the camera, taken with a ruler. For our particular test system, the laser's
-starting point is assumed to be $-4$cm in the x direction and $-11$cm in the $y$
+starting point is assumed to be -4cm in the x direction and -11cm in the $y$
 direction, with the laser parallel to the camera axis.
 
 There are many other methods of this kind that we could have used, such as the
@@ -751,6 +757,7 @@ intrinsics and lens distortion parameters. We have experimentally observed that
 the camera parameters in salt water differ from the parameters in fresh water,
 which is discussed in Section\nbsp[[sec:fw-vs-sw]].
 *** Laser Calibration
+<<sec:slate-calibration>>
 Since our laser mount is not stable enough to guarantee that laser parameters
 stay consistent between dives, we require a laser calibration at the beginning
 of every dive. To do this, we assume that we know the optical frame coordinates
@@ -778,31 +785,23 @@ with the image plane.
 [[file:images/slate-calibration.JPG]]
 
 We assume that we have a scanned copy of the dive slate, and hence the physical
-measurements of the duct tape pattern. We perform the following steps:
-1. Get the largest contour on the slate scan
-2. Get the most similar shape on the calibration image
-3. Fit an ellipse to the slate contour, match this with the calibration contour to find rotation and scale
-4. Find the center of masses of both contours and use the difference to obtain translation
-5. Combine scale, rotation and translation to get a 2D transform
-6. Take contour, use transform to get corresponding points in calibration image
-7. Use these points correspondences to obtain a 3D transformation using solvePnP
-8. Define the slate plane using this 3D transformation
-9. Use the detected laser point and project a ray out to the plane. The intersection is our calculated laser dot coordinate.
+measurements of the duct tape pattern. Assuming that a correspondence can be
+drawn between the corners of the scan representation and the corners within the
+image, a transformation between the two can be found. This is known as a
+Perspective-N-Point (PnP) problem, and OpenCV has a =solvePnP= function that
+makes this relatively straightforward.
 
-**** Bleh :noexport:
 Results demonstrating this method compared to the checkerboard are shown in
 Section\nbsp[[sec:field-calibration-testing]].
 
 ** Diver Operation
 In the field, after calibrating the laser, operating the camera is fairly
 straightforward. The diver will take a picture of nearby fish as normal, with
-the restriction that the laser dot must be trained on the fish.
-
-We expect two conditions in order to get an accurate measurement: we expect that
-the diver be able to orient and maneuver themselves such that the fish is
-perpendicular to the camera axis, and we expect the fish to be flat. If either
-of these conditions are violated, significant error is introduced. A full field
-manual is provided in Appendix [[sec:user-manual]].
+the restriction that the laser dot must be trained on the fish. Note that we
+expect the diver to ensure that two conditions are met:
+1. The head and tail points of the fish are visible in the image.
+2. The laser is both present and visible on the fish.
+Excerpts from the field manual are provided in Appendix [[sec:user-manual]].
 ** Data Offloading
 After the data has been collected, the operator must offload the data to be
 processed externally. We are currently in the process of developing software in
@@ -813,6 +812,452 @@ document.
 Herein we have summarized the procedures required to operate the FishSense Lite
 camera module. The next chapter details how this camera module has been tested.
 * Testing
+<<sec:testing>>
+So far we have mentioned several stages in the processing pipeline that need to be tested:
+1. The laser calibration procedure from Section\nbsp[[sec:slate-calibration]].
+2. The laser calibration algorithm from Section [[sec:laser-calibration]].
+3. Distance measurement.
+4. Object length measurement.
+
+In this section we describe the testing that we have done so far to quantify how
+well the system works. A total of 24 pool tests and 2 field deployments were
+conducted in the process of developing FishSense Lite. A full list of pool tests
+is included in Appendix\nbsp[[sec:pool-test-list]].
+** Primary Methodology
+In order to test the system, the vast majority of our testing involves
+variations on the following procedure:
+1. Calibrate the laser by taking pictures of one or both the planar objects mentioned in Section\nbsp[[sec:slate-calibration]].
+2. Take images of objects with a known length.
+3. Analyze how the estimated lengths compare with the true length of the object.
+
+The experiments described in this section involve one of three measurement objects, described below.
+*** Checkerboard
+The checkerboard itself is useful for the same reason that makes it a good
+object to calibrate the laser with -- it is relatively straightforward to
+identify the corners of a checkerboard in an image. In our case, we use the
+checkerboard as a convenient way to measure the orientation of the object when
+we measure lengths from it, while also using it to get many different
+measurements from a single image.
+
+*** Box
+Historically we have also used an aluminum box, with a 15cm section of tape
+being used as the reference length that we measure. The box is shown in
+Figure\nbsp\ref{fig:box}.
+#+ATTR_LATEX: :scale 0.05
+#+ATTR_ORG: :width 200px
+#+CAPTION: The aluminum box. The top edge of the black tape across the surface is what we typically measure.
+#+LABEL: fig:box
+[[file:images/box.jpg]]
+
+*** Fake Fish
+In order to fully simulate the purpose for which the device was intended, we use
+a dummy rainbow trout as a reference object. Each dummy is made from the same
+model with the same dimensions, though different techniques have been used to
+make them negatively buoyant. Three generations of dummy fish, named Fred,
+George, and Ginny, have been used for these tests\footnote{If you would like to purchase a fish of your own, go to https://www.loftus.com/items/LF-0167.}.
+Fred is shown in Figure \ref{fig:fred}.
+#+ATTR_LATEX: :scale 0.05
+#+ATTR_ORG: :width 200px
+#+CAPTION: Fred, our first fake fish. He, and all the others, are 31cm long.
+#+LABEL: fig:fred
+[[file:images/fred.jpg]]
+
+** Laser Calibration Procedure
+<<sec:field-calibration-testing>> We have been using the checkerboard method as
+the standard of calibration, as this can be easily automated. However, we want
+to assess how effective slate calibration is in theory, as it would be a huge
+asset to people using the device in the field. Luckily for us, the divers at
+REEF were able to test the slate calibration with a slate of their own
+construction. The methodology was as follows: each of their seven camera units
+were calibrated using the same slate, and the length of the slate, show in
+Figure\nbsp\ref{fig:slate-calibration-measurement}, was measured using the newly
+obtained laser parameters. Several measurements were taken per image to create a
+box and whisker plot, shown in Figure\nbsp\ref{fig:slate-calibration}. We can see
+that the measurements are fairly consistent, which demonstrates that the
+calibration method is indeed viable.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: The length measured in the slate calibration experiment.
+#+LABEL: fig:slate-calibration-measurement
+[[file:images/slate-calibration-measurement.png]]
+
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Comparisons of slate measurements across different devices.
+#+LABEL: fig:slate-calibration
+[[file:images/slate-calibration.png]]
+
+** Laser Calibration Algorithm
+<<sec:math-testing>>
+
+We again test the accuracy of the calibration by comparing reference length
+measurements with different laser calibrations.
+Figure\nbsp\ref{fig:laser-calibration-comparison} shows the results from obtained
+from both calibrations -- as can be seen, they are virtually identical.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Comparison of two calibration methods, graphing estimated distance against estimated length.
+#+LABEL: fig:laser-calibration-comparison
+[[file:images/laser-calibration-comparison.png]]
+
+This led me to investigate whether the two methods may lead to equivalent
+solutions. It is possible that the Atanasov method may happen to yield the laser
+parameter solution that minimizes the function defined in the Hu method. My
+current hypothesis is that these methods are provably identical, though work to
+confirm this is still being done.
+
+** Distance Measurements
+<<sec:distance-test>>
+To evaluate purely the distance estimates we can obtain from the system, we take
+images of objects of known size (in this case, a checkerboard square), at known
+distances, and comparing this known distance with the distance we get from the
+algorithm described in Section\nbsp[[sec:distance-finding]]. These data were collected by taking
+pictures at fixed increments -- in our case, we taped 20cm marks to a long
+fishing rod, and took images at each mark. There were originally 19 marks along
+the rod, though many of the pieces of tape came off underwater. Results are
+shown in Figure\nbsp\ref{fig:length-reference}, which demonstrates that the actual
+distance and the measured distance are well correlated.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Length estimates compared to a length reference, measured with two different laser parameter sets.
+#+LABEL: fig:length-reference
+[[file:images/length-reference.png]]
+
+Note that this is heavily dependent on the laser calibration being accurate --
+the data in Figure\nbsp\ref{fig:length-reference} follow two different trends, each
+of which comes from a different set of laser parameters. Both of these parameters
+were obtained from images in the same test -- one calibration run was performed
+before and after the length measurements. If the mount is sturdy, this will be
+less likely to occur.
+
+** Length Measurements
+Figure\nbsp\ref{fig:measurements} demonstrates measurements of our fake fish, in
+this case, Fred, and the box during a pool test. We can see that with varying
+distances away from Fred, the estimate remains relatively consistent, and we
+always underestimate the lengths of both Fred and our box.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Measurements of Fred and the box, plotted over estimated distances away from the camera.
+#+LABEL: fig:measurements
+[[file:images/measurements.png]]
+
+Based on Equation\nbsp\ref{eq:length-from-depth}, there are several factors that
+cause error here, listed below.
+*** Object Thickness
+If the object is not flat, as is the case with most fish, then the laser dot may
+be at a different distance from the camera than the head and tail points. This
+causes closeup measurements of the object to be shorter than in images taken
+further away -- this is due to the fact that the difference in distance between
+the laser dot and the head/tail points makes up a smaller percentage of the
+total distance as the camera becomes further away. This effect can be seen in
+Figure\nbsp\ref{fig:measurements}, as Fred's measurements trend upward until around
+1m away. It is likely that in field use, there will not be many measurements
+taken that close to the fish anyway, as that would likely scare the fish away.
+*** Object Tilt
+If the object is tilted in the image toward or away from the camera, this causes
+the length estimates to be lower than their true length. An experiment on this
+is discussed in Section [[sec:tilt-experiment]].
+
+*** Deviations in Laser Calibration
+Section\nbsp[[sec:distance-test]] showed that an error in the laser calibration
+parameters can cause deviation in measured distance. This creates a deviation in
+measured length that increases the further away the object is from the camera.
+In practice, care must be taken such that laser points are labeled accurately,
+so that the risk of obtaining incorrect laser parameters is minimized.
+Generally, however, this seems to fit within our 15% error margin.
+*** Deviations in Camera Parameters
+An incorrect calibration of the camera's internal parameters can also cause a
+deviation in length. Specifically, if the focal length $f$ is off by a certain
+percentage, then the measured length of an object will be off by the inverse of
+that percentage. This effect can be seen in both
+Figures\nbsp\ref{fig:laser-calibration-comparison} and \ref{fig:measurements}. So
+far, we have not yet encountered a situation where the contributions from this
+exceed our 15% error margin, but more thorough experiments in this area are
+currently underway.
+
+** Contributions of Tilt to Error
+<<sec:tilt-experiment>>
+To evaluate the system's accuracy with respect to different tilt angles, we had
+the following experiment setup. We captured a total of 183 images of a
+checkerboard pattern with the laser dot on it, with varying tilt angles and
+depths. A subset of these images were used to obtain the laser position and
+orientation. Using these data, from each image we extracted 13 lengths, as shown
+in Figure\nbsp\ref{fig:checkerboard-experiment-setup}.
+Figures\nbsp\ref{fig:checkerboard-errors-by-length} and
+\ref{fig:checkerboard-errors-by-distance} shows the results of this experiment.
+
+#+ATTR_LATEX: :scale 0.5
+#+ATTR_ORG: :width 200px
+#+CAPTION: Illustration of lengths measured on checkerboard. Each square pictured here is 41.3mm wide.
+#+LABEL: fig:checkerboard-experiment-setup
+[[file:images/checkerboard-experiment-setup.png]]
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Percent error of length measurements over all distances and angles, grouped by true object length.
+#+LABEL: fig:checkerboard-errors-by-length
+[[file:images/checkerboard_errors_by_length.png]]
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Percent error of length measurements over all distances and angles, plotted over the distance from the camera each image was taken.
+#+LABEL: fig:checkerboard-errors-by-distance
+[[file:images/checkerboard_errors_by_distance.png]]
+
+Both figures show that the relative error in measurement decreases dramatically
+when the angle becomes lower than 15 degrees, which supports previous studies
+\cite{Heppell2012}. Since our system is diver operated, we expect the vast
+majority of images taken will fit this criteria.
+
+Figure\nbsp\ref{fig:variances} shows the variances of the percentage measurement
+errors in all images, where each data point represents a single image. We see
+that the variance in measurements is much higher when the tilt angle is higher
+and the camera is close to the image. My current hypothesis for this is that
+when the calibration board is closer to the camera, the distance covered by the
+tilting checkerboard is a more significant percentage of the overall distance,
+which causes the error of the distance measured to be larger.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Variances of percentage length error, with each data point being a single image.
+#+LABEL: fig:variances
+[[file:images/checkerboard_error_variances.png]]
+
+** Field Testing Observations
+There are two main locations in which Fishsense Lite modules have been field
+tested. The first was conducted off the La Jolla coast. Water conditions in La
+Jolla are turbid, so this was an opportunity to test how our system would fare
+in low visibility conditions. The main goal of this test was to evaluate the red
+and green lasers, looking both at attenuation and how fish would react.
+
+Secondly, in August 2023, we deployed six of our FishSense Lite units (FSL-01 to
+FSL-06) to be tested by REEF staff in the Florida Keys. The water conditions in
+this region were much clearer than in the La Jolla Kelp forests, so despite the
+shorter attenuation of red lasers, the data from this test are predominantly
+generated using red lasers. These deployments allowed us to look at how the
+system would fare during more long term use, and in the hands of real
+recreational divers.
+
+I would like to acknowledge and thank Nathan Hui and Jack Elstner for
+collecting data off the coast of La Jolla, and to REEF for helping us test the
+many camera units we sent off to them in Florida.
+
+*** Salt Water Measurements
+<<sec:fw-vs-sw>>
+
+Much like in our pool tests, the laser was first calibrated, then Fred was
+measured and lengths were calculated in post-processing.
+
+Length measurements obtained in salt water were generally higher than length
+measurements obtained in pool water, as shown in
+Figure\nbsp\ref{fig:freshwater-vs-saltwater}. Since the cameras are calibrated in
+fresh water, the change in refractive index in salt water is likely what causes
+the discrepancy in measurements. However, this is still within our accepted
+error margin of 15%, as we defined earlier.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: A freshwater vs saltwater comparison of measured Fred lengths.
+#+LABEL: fig:freshwater-vs-saltwater
+[[file:images/freshwater-vs-saltwater.png]]
+
+*** Laser Study and Comparison
+<<sec:laser-comparison>>
+
+The bulk of our experiments have been with two main laser pointer models: the
+Innovative Scuba Concepts laser
+pointer\footnote{https://dealer.innovativescuba.com/tc-101-aluminum-underwater-laser-pointer.html},
+and the Shark
+Laser\footnote{https://waterprooflaser.com/contents/en-us/d22\_TO-ORDER.html}.
+Both lasers are rated for less than 5mW of power. The former model emits light
+at 700nm, and the latter at 532nm. We discovered two significant factors that
+influenced our decision to use one laser over the other.
+
+The first was attenuation - within the visible spectrum, water attenuates light
+with longer wavelengths significantly more than shorter wavelengths, and so red
+light is more difficult to see at greater distances. From our testing, we found
+that the red laser became incredibly difficult to spot at around 5m.
+Figure\nbsp\ref{fig:laser-test} shows an example of a comparative range test with
+the Shark laser and three different red lasers, of which the innovative Scuba
+laser is second from the left.
+#+ATTR_LATEX: :scale 0.3
+#+ATTR_ORG: :width 200px
+#+CAPTION: Lasers from left to right: Shark laser (green), Innovation Scuba, Orca, Gold
+#+LABEL: fig:laser-test
+[[file:images/lasers-close.JPG]]
+
+The second was fish behavior - from tests with real fish, divers have observed
+that fish tended to avoid the green laser. Our main hypothesis for why this
+occurs is that fish are able to see green light far better than red. In
+especially turbid water, added scattering meant that the beam was visible even
+when the beam was not pointed directly at the fish's eyes. This meant that in La
+Jolla, fish were especially skittish around the green laser. We realized this
+because after the divers made a safety stop further off the bottom, when
+pointing the green laser at the fish they seemed less afraid.
+
+In particularly turbid conditions, particles in the water would cause the laser
+beam to scatter, causing it to be visible within the image. An example of this
+is shown in Figure\nbsp\ref{fig:sheephead}. There is potential for this to be used
+to determine the laser's calibration parameters without the need for a planar
+object, though work on this is yet to be done.
+
+#+ATTR_LATEX: :scale 0.08
+#+ATTR_ORG: :width 200px
+#+CAPTION: A male California Sheephead from the La Jolla Kelp Beds. Note the ``lightsaber'' effect caused by particulates in the water.
+#+LABEL: fig:sheephead
+[[file:images/sheephead.JPG]]
+
+*** Points of Mechanical Failure
+<<sec:mechanical-failure>>
+During field testing, we identified two main points where the device would tend to mechanically fail, listed below.
+**** Laser Mount
+<<sec:mount-failure>>
+
+The laser mounts are made out of PLA, and therefore absorb water. This causes
+the laser mounts to become brittle, and they have been shown to break after a
+month or two of operation. This could be due to a combination of absorption of
+water, degradation from exposure to ultraviolet light, or the large amount of
+stress being put on certain parts by the screws. Current work is being done to
+create these mounts out of a different material which does not absorb water and
+resists corrosion.
+
+Figure\nbsp\ref{fig:mount-crack} shows the most common stress point which causes the
+mount to fail. This cracking is caused by the two screws used to keep the laser
+secured to the mount.
+
+#+ATTR_LATEX: :scale 0.5
+#+ATTR_ORG: :width 200px
+#+CAPTION: Image of one example of mount failure.
+#+LABEL: fig:mount-crack
+[[file:images/mount-failure.png]]
+
+**** Laser Pointer
+The laser pointers themselves have also been known to fail. There are two main
+reasons for this:
+1. The O-rings fail due to lack of proper maintenance or debris getting in the way, flooding the battery enclosure
+2. A mechanical failure from the mechanism which activates the laser. Wear from turning them on so many times causes them to chip.
+
+Discussions with Backscatter are in the works to create a custom solution that
+does not need to be unscrewed, and also includes the possibility of having
+multiple lasers. Multiple lasers also allow us to estimate the angle of the fish
+relative to the camera, which further increases the accuracy of our estimations.
+
+** Conclusion :ignore:
+\\
+While this system still has many issues with durability and reliability, we have
+still shown that it is capable of obtaining fish lengths to within our desired
+error margins.
+* Conclusion
+In this work we have discussed the construction and inner workings of FishSense
+Lite. We described main assumption -- the pinhole camera assumption, which
+allows us to draw simple relationships between apparent and actual size. We
+established that distance to the fish is necessary to calculate it's actual
+length. We discussed both procedures to obtain the laser parameters, and to
+obtain the distance to the laser dot from the camera once those parameters are
+known. We presented results that verify the accuracy of this system is within
+15% of a fish's true length.
+
+There is much work to be done to improve the system. We are working towards
+removing some of the current requirements of the subject being imaged. In order
+to remove the requirement that the fish be parallel to the image plane, we are
+looking into either using multiple lasers, or relying on a machine learning
+method to estimate the fish's orientation. We also need to refine some of the
+automatic detection algorithms for both the fish and the calibration object, and
+continue to build the infrastructure to support fully automatic data processing.
+
+One area which we are especially interested in advancing is removing the
+corrective optic, which will be possible once we are able to properly model the
+distortions caused by the port of the underwater housing. This will reduce the
+cost of our current device significantly, and will also be a significant step in
+allowing us to use stereo cameras with Snell's law distortions.
+
+
+#+LATEX: \appendix
+* Appendix
+** Pool Test List
+<<sec:pool-test-list>>
+Table\nbsp\ref{tab:comparison} shows the full list of pool tests conducted while testing FishSense Lite.
+#+ATTR_LATEX:  :align |c|p{0.8\linewidth}|
+#+CAPTION: List of pool tests conducted, with their purpose
+#+LABEL: tab:comparison
+|------------+----------------------------------------------------------------------------------------------------------------------------|
+|       Date | Purpose                                                                                                                    |
+|------------+----------------------------------------------------------------------------------------------------------------------------|
+| 2023-02-24 | Lens calibration of first TG6                                                                                              |
+| 2023-03-03 | Evaluate accuracy of OpenCV's calibration for different camera configurations (Olympus vs. Go Pro, housing vs. no housing) |
+| 2023-03-10 | Test attenuation of red vs. green laser                                                                                    |
+| 2023-03-20 | First attempt of laser calibration                                                                                         |
+| 2023-04-05 | Repeat of both camera calibration and laser calibration                                                                    |
+| 2023-04-12 | Quantify errors of length measurement from both object tilt and thickness                                                  |
+| 2023-04-19 | Collect length-referenced data for ground-truth comparison                                                                 |
+| 2023-05-03 | Evaluate deviation in laser calibration parameters after travel (Nathan's house)                                           |
+| 2023-05-08 | Obtain laser parameters with new mount (Nathan's house)                                                                    |
+| 2023-07-13 | Calibrate FSL-01 camera and laser  (Nathan's house)                                                                        |
+| 2023-07-29 | Recalibrate and determine whether FSL-01 has maintained calibration after ocean test (Nathan's house)                      |
+| 2023-08-07 | Camera calibrations for FSL-02, 03, 04, 05, 06 and 07 (Nathan's house)                                                     |
+| 2023-08-14 | Laser calibrations for FSL-02, 03, 04, 05, 06 and 07 (Nathan's house)                                                      |
+| 2023-08-18 | Recalibration of laser mounts for all camera systems due to faulty mechanical design. First testing of slate calibration   |
+| 2023-10-28 | Flat port data                                                                                                             |
+| 2023-11-10 | Trial for obtaining more fine-grain length data for different tilt angles                                                  |
+| 2023-11-17 | Second trial for obtaining more fine-grain length data for different tilt angles                                           |
+| 2024-02-12 | Data for different dive slates, i.e. do rougher edges and corners affect the quality of slate calibration?                 |
+| 2024-02-26 | Laser calibration and length measurements with flat port                                                                   |
+| 2024-03-04 | Data for testing automatic slate calibration                                                                               |
+| 2024-04-25 | Determine accuracy of range measurements                                                                                   |
+| 2024-05-02 | Better determine accuracy of range measurements with more data points                                                      |
+| 2024-05-09 | Redo the range accuracy test from previous week, as well as attempt new camera calibration                                 |
+|------------+----------------------------------------------------------------------------------------------------------------------------|
+
+** FishSense Lite User Procedure
+<<sec:user-manual>>
+*** Setup
+1. Take the camera underwater and burp the lens. When reattaching the lens, ensure that it is tightly attached.  The lens needs to remain in the same position it originally calibrated.
+2. Turn on the laser by turning the back end clockwise.
+3. Take a validation photo using the method specified in Section
+
+*** Use
+1. When the laser is in use, aim it towards the center of the body mass of the fish. Ensure that the laser is not pointed directly toward a person.
+2. In order to image fish, it is not necessary to look through the camera's viewport.  If the laser is visible on the fish, it should also be visible in the camera.
+3. Refer to the appropriate camera manual for photo and video collection procedures. Take photos with fish as close to flat in the image as possible; otherwise, the length measurement may be inaccurate.
+
+*** Teardown
+1. When data collection is complete, turn off the laser.
+2. Offload data to a hard disk if necessary.
+
+*** Guidelines
+1. Do not use the zoom function on the camera. This changes the focal length, rendering our calibration useless.
+2. Avoid touching or moving the laser directly. Do not use the laser as a handle. The laser must be rigidly attached and unmoved for calibration values to hold true.
+3. The laser must be pointed directly at the fish, as close to its center of body mass as possible.
+4. The camera's optical axis should establish approximately a right angle with the vertical axis of the fish.
+5. Ensure the fish is located within the effective range of 0.5 to 5 meters from the camera. With 3 meters being the ideal distance.
+6. The fish must be illuminated.
+
+*** Camera Settings
+The following settings are the ones for which the camera was tested, and to keep the data consistent, we recommend that you use them as well. Unless specified, all these settings can be found by pressing the "OK" button.
+- Program auto (set the wheel to P)
+- Flash off
+- ISO-A 1600
+- Exposure bias 0
+- Burst mode
+- Underwater shallow white balance
+- ESP metering
+- Face priority off
+- Accessory off
+- JPEG mode underwater
+- Autofocus
+- Aspect ratio 4000 x 3000
+- Output format LF + raw
+- Still image stabilization on
+
+* Backmatter                                                         :ignore:
+\bibliographystyle{plain}
+\bibliography{fishsense}
+* Testing :noexport:
 ** Locations
 The data in this section were gathered from four locations, listed below.
 *** Swimming Pools
@@ -868,9 +1313,9 @@ In order to fully simulate the purpose for which the device was intended, we use
 a dummy rainbow trout as a reference object. Each dummy is made from the same
 model, though different techniques have been used to make them negatively
 buoyant. Three generations of dummy fish, named Fred, George, and Ginny, have
-been used for these tests\footnote{If you would like to purchase a Weasley fish
-of your own, go to https://www.loftus.com/items/LF-0167}. Fred is shown in
-Figure \ref{fig:fred}.
+been used for these tests
+\footnote{If you would like to purchase a Weasley fish of your own, go to https://www.loftus.com/items/LF-0167}.
+Fred is shown in Figure \ref{fig:fred}.
 
 #+ATTR_LATEX: :scale 0.05
 #+ATTR_ORG: :width 200px
@@ -878,19 +1323,6 @@ Figure \ref{fig:fred}.
 #+LABEL: fig:fred
 [[file:images/fred.jpg]]
 
-To evaluate purely the distance estimates we can obtain from the system, we took
-images of objects of known size, . These data were collected by taking pictures
-at a known distance -- in our case, we taped 20cm increments to a long fishing
-rod, and took images at each mark. There were originally 19 marks along the rod,
-though many of the pieces of tape came off underwater. Results are shown in
-Figure\nbsp\ref{fig:length-reference}, which demonstrates that the actual distance
-and the measured distance are well correlated.
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: Length estimates compared to a length reference.
-#+LABEL: fig:length-reference
-[[file:images/length-reference.png]]
 
 To measure the accuracy of this system, we rely on the accuracy of length
 measurements obtained, since we are unable to rely on the true position and
@@ -903,20 +1335,6 @@ size in the image.
 In addition to Fred et al, another length reference we use is the flat surface
 of an aluminum box, across which we mark a distance of 15cm.
 
-Figure\nbsp\ref{fig:measurements} demonstrates measurements of our fake fish, in
-this case, Fred, and the box during a pool test. We can see that with varying
-distances away from Fred, the estimate remains relatively consistent, and we
-always underestimate Fred's length. The primary sources of error have been due
-to faulty calibration or issues with mount design. Previous datasets that show
-error have been consistent, and according to
-Equation\nbsp\ref{eq:length-from-depth}, the factors that can create a consistent
-error include pixel pitch $w$ and focal length $f$.
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: Measurements of Fred and the box, plotted over estimated distances away from the camera.
-#+LABEL: fig:measurements
-[[file:images/measurements.png]]
 
 
 **** Object Thickness :noexport:
@@ -985,268 +1403,15 @@ current hypothesis is that these methods are provably identical, though work to
 confirm this is still being done.
 
 *** Effects of Freshwater Versus Saltwater
-<<sec:fw-vs-sw>>
-Unsurprisingly, we found that the red laser attenuated much more than the green
-laser. Particles in the water also affected this, as the light would scatter off
-and render the laser beam visible, as show in Figure\nbsp\ref{fig:sheephead}.
-
-One other interesting result was related to the change in salinity between pool
-water and sea water. Length measurements obtained in salt water were generally
-higher than length measurements obtained in pool water, as shown in
-Figure\nbsp\ref{fig:freshwater-vs-saltwater}. Since the cameras are calibrated in
-fresh waterm, the change in refractive index in salt water is likely what causes
-the discrepancy in measurements. However, this is still within our accepted
-error margin of 15%, as we defined earlier.
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: A freshwater vs saltwater comparison of measured Fred lengths.
-#+LABEL: fig:freshwater-vs-saltwater
-[[file:images/freshwater-vs-saltwater.png]]
-
-
-#+ATTR_LATEX: :scale 0.1
-#+ATTR_ORG: :width 200px
-#+CAPTION: A male California Sheephead from the La Jolla Kelp Beds. Note the ``lightsaber'' effect caused by particulates in the water.
-#+LABEL: fig:sheephead
-[[file:images/sheephead.JPG]]
 
 *** Different Lasers
-<<sec:laser-comparison>>
-
-The bulk of our experiments have been with two main laser pointer models: the
-Innovative Scuba Concepts laser
-pointer\footnote{https://dealer.innovativescuba.com/tc-101-aluminum-underwater-laser-pointer.html},
-and the Shark
-Laser\footnote{https://waterprooflaser.com/contents/en-us/d22\_TO-ORDER.html}.
-Both lasers are rated for less than 5mW of power. The former model emits light
-at 700nm, and the latter at 532nm. We discovered two significant factors that
-influenced our decision to use one laser over the other.
-
-The first was attenuation - within the visible spectrum, water attenuates light
-with longer wavelengths significantly more than shorter wavelengths, and so red
-light is more difficult to see at greater distances. From our testing,
-we found that the red laser became incredibly difficult to spot at around 5m.
-Figure\nbsp\ref{fig:laser-test} shows the two laser dots side by side in clear water at a distance
-of 2m. The red laser is barely visible, while the green laser is still very bright.
-
-#+ATTR_LATEX: :scale 0.3
-#+ATTR_ORG: :width 200px
-#+CAPTION: Lasers from left to right: Shark laser (green), Innovation Scuba, Orca, Gold
-#+LABEL: fig:laser-test
-
-The second was fish behavior - from tests with real fish, divers have observed
-that fish tended to avoid the green laser. Our main hypothesis for why this
-occurs is that fish are able to see green light far better than red. In
-especially turbid water, added scattering meant that the beam was visible even
-when the beam was not pointed directly at the fish's eyes. This meant that in La
-Jolla, fish were especially skittish around the green laser. We realized this
-because after the divers made a safety stop further off the bottom, when
-pointing the green laser at the fish they seemed less afraid.
 
 *** Robustness to Tilt
-To evaluate the system's accuracy with respect to different tilt angles, we had
-the following experiment setup. We captured a total of 183 images of a
-checkerboard pattern with the laser dot on it, with varying tilt angles and
-depths. A subset of these images were used to obtain the laser position and
-orientation. Using these data, from each image we extracted 13 lengths, as shown
-in Figure\nbsp\ref{fig:checkerboard-experiment-setup}.
-Figures\nbsp\ref{fig:checkerboard-errors-by-length} and
-\ref{fig:checkerboard-errors-by-distance} shows the results of this experiment.
-
-#+ATTR_LATEX: :scale 0.5
-#+ATTR_ORG: :width 200px
-#+CAPTION: Illustration of lengths measured on checkerboard.
-#+LABEL: fig:checkerboard-experiment-setup
-[[file:images/checkerboard-experiment-setup.png]]
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: Percent error of length measurements over all distances and angles, grouped by true object length.
-#+LABEL: fig:checkerboard-errors-by-length
-[[file:images/checkerboard_errors_by_length.png]]
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: Percent error of length measurements over all distances and angles, plotted over the distance from the camera each image was taken.
-#+LABEL: fig:checkerboard-errors-by-distance
-[[file:images/checkerboard_errors_by_distance.png]]
-
-Both figures show that the relative error in measurement decreases dramatically
-when the angle becomes lower than 15 degrees, which supports previous studies
-\cite{Heppell2012}. Since our system is diver operated, we expect the vast
-majority of images taken will fit this criteria.
-
-Figure\nbsp\ref{fig:variances} shows the variances of the percentage measurement
-errors in all images, where each data point represents a single image. We see
-that the variance in measurements is much higher when the tilt angle is higher
-and the camera is close to the image. My current hypothesis for this is that
-when the calibration board is closer to the camera, the distance covered by the
-tilting checkerboard is a more significant percentage of the overall distance,
-which causes the error of the distance measured to be larger.
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: Variances of percentage length error, with each data point being a single image.
-#+LABEL: fig:variances
-[[file:images/checkerboard_error_variances.png]]
-
-*** Points of Mechanical Failure
-<<sec:mechanical-failure>>
-There are several areas in which the mechanical system can fail.
-**** Laser Mount
-<<sec:mount-failure>>
-
-The laser mounts are made out of PLA, and therefore absorb water. This causes
-the laser mounts to become brittle, and they have been shown to break after a
-month or two of operation. This could be due to a combination of absorption of
-water, degradation from exposure to ultraviolet light, Current work is being
-done to create these mounts out of a different material which does not absorb
-water and resists corrosion.
-
-The current design also puts significant stress on the parts that hold the laser
-in place. Figure\nbsp\ref{fig:mount-crack} shows the most common stress point which
-causes the mount to fail. This cracking is caused by the two screws used to keep
-the laser secured to the mount.
-
-#+ATTR_LATEX: :scale 0.5
-#+ATTR_ORG: :width 200px
-#+CAPTION: Image of one example of mount failure.
-#+LABEL: fig:mount-crack
-[[file:images/mount-failure.png]]
-
-**** Laser Pointer
-The laser pointers themselves have also been known to fail. There are two main
-reasons for this:
-1. The O-rings fail due to lack of proper maintenance or debris getting in the way, flooding the battery enclosure
-2. A mechanical failure from the mechanism which activates the laser. Wear from turning them on so many times causes them to chip.
-
-Discussions with Backscatter are in the works to create a custom solution that
-does not need to be unscrewed, and also includes the possibility of having
-multiple lasers. Multiple lasers also allow us to estimate the angle of the fish
-relative to the camera, which further increases the accuracy of our estimations.
-**** Questions to ask REEF :noexport:
-- how many dives did it take the laser mounts to break?
-- how were the laser mounts being handled when they broke?
-*** User Experience
-Divers have said the following about using the FishSense Lite modules:
-- Generally the devices are ``fun and easy to use''
-- They take 1-2 dives to get used to
-
-Our biggest issues with the hardware are those of durability -- with prolonged
-use, we found that laser points would leak, and laser mounts would crack.
-
-One other concern we had was how difficult it would be to get an image such that
-the fish is close to parallel with the image plane -- this turned out to not be
-a big issue if such an angle was easily accessible. However, if the fish
-happened to be next to a rock at an angle, getting a good picture proved
-difficult.
 ** Conclusion :ignore:
 \\
 While this system still has many issues with durability and reliability, we have
 still shown that it is capable of obtaining fish lengths to within our desired
 error margins.
-* Conclusion
-In this work we have discussed the construction and inner workings of FishSense
-Lite. We described main assumption -- the pinhole camera assumption, which
-allows us to draw simple relationships between apparent and actual size. We
-established that distance to the fish is necessary to calculate it's actual
-length. We discussed both procedures to obtain the laser parameters, and to
-obtain the distance to the laser dot from the camera once those parameters are
-known. We presented results that verify the accuracy of this system is within
-15% of a fish's true length.
-
-There is much work to be done to improve the system. We are working towards
-removing some of the current requirements of the subject being imaged. In order
-to remove the requirement that the fish be parallel to the image plane, we are
-looking into either using multiple lasers, or relying on a machine learning
-method to estimate the fish's orientation. We also need to refine some of the
-automatic detection algorithms for both the fish and the calibration object, and
-continue to build the infrastructure to support fully automatic data processing.
-
-One area which we are especially interested in advancing is removing the
-corrective optic, which will be possible once we are able to properly model the
-distortions caused by the port of the underwater housing. This will reduce the
-cost of our current device significantly, and will also be a significant step in
-allowing us to use stereo cameras with Snell's law distortions.
-
-
-#+LATEX: \appendix
-* Appendix
-** Pool Test Schedule
-
-#+ATTR_LATEX:  :align |c|p{0.8\linewidth}|
-#+CAPTION: List of pool tests conducted, with their purpose
-#+LABEL: tab:comparison
-|       Date | Purpose                                                                                                                    |
-|------------+----------------------------------------------------------------------------------------------------------------------------|
-| 2023-02-24 | Lens calibration of first TG6                                                                                              |
-| 2023-03-03 | Evaluate accuracy of OpenCV's calibration for different camera configurations (Olympus vs. Go Pro, housing vs. no housing) |
-| 2023-03-10 | Test attenuation of red vs. green laser                                                                                    |
-| 2023-03-20 | First attempt of laser calibration                                                                                         |
-| 2023-04-05 | Repeat of both camera calibration and laser calibration                                                                    |
-| 2023-04-12 | Quantify errors of length measurement from both object tilt and thickness                                                  |
-| 2023-04-19 | Collect length-referenced data for ground-truth comparison                                                                 |
-| 2023-05-03 | Evaluate deviation in laser calibration parameters after travel (Nathan's house)                                           |
-| 2023-05-08 | Obtain laser parameters with new mount (Nathan's house)                                                                    |
-| 2023-07-13 | Calibrate FSL-01 camera and laser  (Nathan's house)                                                                        |
-| 2023-07-29 | Recalibrate and determine whether FSL-01 has maintained calibration after ocean test (Nathan's house)                      |
-| 2023-08-07 | Camera calibrations for FSL-02, 03, 04, 05, 06 and 07 (Nathan's house)                                                     |
-| 2023-08-14 | Laser calibrations for FSL-02, 03, 04, 05, 06 and 07 (Nathan's house)                                                      |
-| 2023-08-18 | Recalibration of laser mounts for all camera systems due to faulty mechanical design. First testing of slate calibration   |
-| 2023-10-28 | Flat port data                                                                                                             |
-| 2023-11-10 | Trial for obtaining more fine-grain length data for different tilt angles                                                  |
-| 2023-11-17 | Second trial for obtaining more fine-grain length data for different tilt angles                                           |
-| 2024-02-12 | Data for different dive slates, i.e. do rougher edges and corners affect the quality of slate calibration?                 |
-| 2024-02-26 | Laser calibration and length measurements with flat port                                                                   |
-| 2024-03-04 | Data for testing automatic slate calibration                                                                               |
-| 2024-04-25 | Determine accuracy of range measurements                                                                                   |
-| 2024-05-02 | Better determine accuracy of range measurements with more data points                                                      |
-
-** FishSense Lite User Procedure
-<<sec:user-manual>>
-*** Setup
-1. Take the camera underwater and burp the lens. When reattaching the lens, ensure that it is tightly attached.  The lens needs to remain in the same position it originally calibrated.
-2. Turn on the laser by turning the back end clockwise.
-3. Take a validation photo using the method specified in Section
-
-*** Use
-1. When the laser is in use, aim it towards the center of the body mass of the fish. Ensure that the laser is not pointed directly toward a person.
-2. In order to image fish, it is not necessary to look through the camera's viewport.  If the laser is visible on the fish, it should also be visible in the camera.
-3. Refer to the appropriate camera manual for photo and video collection procedures. Take photos with fish as close to flat in the image as possible; otherwise, the length measurement may be inaccurate.
-
-*** Teardown
-1. When data collection is complete, turn off the laser.
-2. Offload data to a hard disk if necessary.
-
-*** Guidelines
-1. Do not use the zoom function on the camera. This changes the focal length, rendering our calibration useless.
-2. Avoid touching or moving the laser directly. Do not use the laser as a handle. The laser must be rigidly attached and unmoved for calibration values to hold true.
-3. The laser must be pointed directly at the fish, as close to its center of body mass as possible.
-4. The camera's optical axis should establish approximately a right angle with the vertical axis of the fish.
-5. Ensure the fish is located within the effective range of 0.5 to 5 meters from the camera. With 3 meters being the ideal distance.
-6. The fish must be illuminated.
-
-*** Camera Settings
-The following settings are the ones for which the camera was tested, and to keep the data consistent, we recommend that you use them as well. Unless specified, all these settings can be found by pressing the "OK" button.
-- Program auto (set the wheel to P)
-- Flash off
-- ISO-A 1600
-- Exposure bias 0
-- Burst mode
-- Underwater shallow white balance
-- ESP metering
-- Face priority off
-- Accessory off
-- JPEG mode underwater
-- Autofocus
-- Aspect ratio 4000 x 3000
-- Output format LF + raw
-- Still image stabilization on
-
-* Backmatter                                                         :ignore:
-\bibliographystyle{plain}
-\bibliography{fishsense}
 * Problem Motivation                                               :noexport:
 Scrapping this, it's too wordy
 
