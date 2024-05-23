@@ -87,23 +87,24 @@ opportunity to do all of this.
 Ecologists are interested in studying fish length distributions as a metric for
 the health of fish populations, both for fishery management and to gauge the
 effect of policies and worsening ocean conditions in a small area. Current
-methods of gathering these data involve catch and release programs, which can
-often harm the fish being measured, is expensive to coordinate, and only obtains
-a limited sample of the fish population. These are also not possible in marine
-protected areas (MPAs), where fishing is illegal. The state of the art method in
-MPAs is to conduct a roving diver survey, where divers must visually estimate
-and record individual fish lengths. Measurements are generally low-fidelity, and
-divers must be trained and retrained before their estimates are considered to be
-sufficiently accurate.
+methods of gathering these data are time intensive, require expensive equipment
+and/or training. Approaching this issue with citizen science -- utilizing
+efforts from the general public -- allows us to gather much more data about fish
+populations that would currently be costly to acquire. We are working towards
+developing a device and software platform that allows recreational divers to
+take pictures of fish, and have the images processed such that length and
+species information are determined automatically.
 
-We are developing a different method that can be used by recreational divers,
-and generates these data using citizen science efforts. We mount a standard
-laser pointer on a consumer waterproof camera, and obtain fish length purely
-from an image of the fish with the laser dot on it. This work focuses primarily
-on the extraction of the fish's length from the image, using a priori knowledge
-of laser parameters, as well as the calibration procedures from which this
-knowledge is determined. We show that the accuracy of this solution is better
-than visual estimation, to within 15% of the fish's true length.
+This work focuses on the mechanism under which fish length is calculated. The
+device incorporates a standard laser pointer with a consumer waterproof camera,
+and uses the location of the laser dot in the object to determine the distance
+between the object and the camera. We also discuss methods to ensure that the
+parameters of the laser with respect to the camera are known, as well as how we
+can ensure that these procedures can be performed in the field. We test these by
+conducting trial calibrations and length measurements in a controlled setting,
+and evaluating where sources of error come from. From our testing we are able to
+verify that our technology is capable of obtaining measurements within 20% of of
+true length, similar to the error margins of visual estimation.
 
 #+END_dissertationabstract
 #+LATEX: \mainmatter
@@ -298,7 +299,7 @@ length. This system has been used to document the recovery of a population of
 Nassau Grouper over 7 years, in order to quantify the effectiveness of recovery
 efforts\nbsp\cite{Heppell2012}. While such a system was also demonstrated to be more
 effective than visual estimation, it also requires manufacturing a
-custom-machined aluminum mount, which is not easily accessible for most diverse.
+custom-machined aluminum mount, which is not easily accessible for most divers.
 Calibration of the system also involves verifying that the beams are the same
 distance apart up to 15m from the source, which can be challenging to do in a
 field setting.
@@ -307,19 +308,19 @@ field setting.
 \\
 So far, we have gone over the motivation and background for this project. In the
 next chapter we will discuss the primary principles of the laser algorithm.
-* Algorithm Details
-<<sec:algorithms>>
+* System Overview
 ** Preamble :ignore:
-Our primary goals with this system are to reduce the cost to gather fish length
-data, and to make the practice more accessible to recreational divers. To
-accomplish this, we attach an underwater camera (in our case, an Olympus TG6) to
-an off-the-shelf underwater laser pointer. Both of these tools are commonly
-owned by recreational divers, which is why we target this low cost hardware
-setup. Figure\nbsp\ref{fig:fsl} shows an example of one such camera system.
+This chapter contains an overview of FishSense Lite. Our primary goals with this
+system are to reduce the cost to gather fish length data, and to make the
+practice more accessible to recreational divers. To accomplish this, we attach
+an underwater camera (in our case, an Olympus TG6) to an off-the-shelf
+underwater laser pointer. Both of these tools are commonly owned by recreational
+divers, which is why we target this low cost hardware setup.
+Figure\nbsp\ref{fig:fsl} shows an example of one such camera system.
 
 #+ATTR_LATEX: :scale 0.2  :options angle=-90
 #+ATTR_ORG: :width 200px
-#+CAPTION: A fully assembled FishSense Lite unit.
+#+CAPTION: A fully assembled FishSense Lite hardware unit.
 #+label: fig:fsl
 [[file:images/fishsense-lite-system.jpg]]
 
@@ -327,8 +328,152 @@ Our system relies on the diver taking images with the laser beam pointed on the
 fish. With just the image, as well as a priori knowledge of the laser beam
 parameters, we can then use this to obtain a length of the fish within the
 image.
+** Hardware Setup
+*** Overview :ignore:
+This is the physical device that divers would use to take measurements. It is
+intended to be composed of materials that many divers already own, which is why
+we use off the shelf parts. The only new component that we include is a 3D
+printed mount.
+*** Camera
+For our own testing, we use an Olympus TG6, a common camera for divers to own
+for underwater photography. This camera itself is waterproof, though we use
+another protective housing around it.
+
+This is just one example of a camera that can be used for this system --
+theoretically any camera would work.
+*** Wide Angle Lens
+<<sec:backscatter>>
+
+With just the waterproof housing, Snell's law distorts images in such a way that
+a relationship between lengths in the image and lengths in the real world are
+difficult to obtain\nbsp\cite{Agrawal2012}. To mitigate the effects of this, we use
+a corrective optic. Developed by Backscatter, this corrective optic is designed
+to attach to the Olympus's underwater housing, and is typically used to widen
+the field of view for underwater photographers. Future work is required for us
+to understand how to model these Snell's law distortions better so we can
+ultimately remove it. This allows us to use a simple camera model described in
+Section\nbsp[[sec:pinhole]].
+
+In order to verify that this model was sufficient for this
+camera system, one metric we used was the mean squared error given by OpenCV's
+=calibrateCamera= function. This value was significantly lower when calibrating
+with the dome port on, and the images taken without the dome port showed a
+significantly higher amount of distortion.
+
+*** Laser Pointer
+The laser pointer is another off the shelf component. Many divers own laser
+pointers in order to gesture to others. Ideally, the laser is mounted rigidly to
+the camera -- in practice, due to manufacturing defects and small perturbations,
+the laser moves enough to cause significant error in the measurements. See
+Section\nbsp[[sec:laser-calibration]] for how this issue is solved.
+
+The color of the laser also has an effect, discussed in Section\nbsp[[sec:laser-comparison]].
+
+** Procedures
+*** Overview :ignore:
+This section details how the device would be used in the field.
+*** Calibration Procedures
+**** Camera Calibration
+In order to obtain parameters like the focal length and location of the
+principal point, we must perform calibration of the camera. This is done using
+Zhang's procedure\nbsp\cite{Zhang2000}, where many images of a checkerboard are
+taken, and parameters are found such that known dimensions and regularity of the
+checkerboard are satisfied.
+
+Currently, this procedure must be done underwater. We do the described procedure
+in a swimming pool, with the corrective optic attached. OpenCV's
+=cameraCalibrate= function provides a straightforward way to obtain camera
+intrinsics and lens distortion parameters. We have experimentally observed that
+the camera parameters in salt water differ from the parameters in fresh water,
+which is discussed in Section\nbsp[[sec:fw-vs-sw]].
+**** Laser Calibration
+<<sec:slate-calibration>>
+Since our laser mount is not stable enough to guarantee that laser parameters
+stay consistent between dives, we require a laser calibration at the beginning
+of every dive. To do this, we assume that we know the optical frame coordinates
+of each laser dot $p_i$. This requires that we have some kind of depth reference.
+
+The first method that we tested was to use the same checkerboard pattern used in
+camera calibration. The main reasoning for this method was that there are two
+parts to this method for which OpenCV provides functionality for - detecting
+corners of specifically the checkerboard pattern, and calculating a 3D
+transformation given object points and corresponding points in an image.
+However, in the field, requiring that divers carry a large and heavy
+checkerboard for every dive is a large ask.
+
+We have developed a procedure that does not utilize a checkerboard, and can
+instead be done with a dive slate -- something that most divers will carry. An
+example of one of these is shown in Figure\nbsp\ref{fig:slate-calibration}. We add
+pieces of duct tape in an arbitrary pattern on one side to make the slate more
+featureful. We also make the assumption that the slate remains close to parallel
+with the image plane.
+
+#+ATTR_LATEX: :scale 0.4
+#+ATTR_ORG: :width 200px
+#+CAPTION: An example of a slate calibration image.
+#+label: fig:slate-calibration
+[[file:images/slate-calibration.JPG]]
+
+We assume that we have a scanned copy of the dive slate, and hence the physical
+measurements of the duct tape pattern. Assuming that a correspondence can be
+drawn between the corners of the scan representation and the corners within the
+image, a transformation between the two can be found. This is known as a
+Perspective-N-Point (PnP) problem, and OpenCV has a =solvePnP= function that
+makes this relatively straightforward.
+
+Results demonstrating this method compared to the checkerboard are shown in
+Section\nbsp[[sec:field-calibration-testing]].
+
+*** Diver Operation
+In the field, after calibrating the laser, operating the camera is fairly
+straightforward. The diver will take a picture of nearby fish as normal, with
+the restriction that the laser dot must be trained on the fish. Note that we
+expect the diver to ensure that two conditions are met:
+1. The head and tail points of the fish are visible in the image.
+2. The laser is both present and visible on the fish.
+Excerpts from the field manual are provided in Appendix [[sec:user-manual]].
+*** Data Offloading
+After the data has been collected, the operator must offload the data to be
+processed externally. We are currently in the process of developing software in
+order to perform this processing, though details are out of scope of this
+document.
+
+** Software
+Once the data has been collected, it must be processed to extract the lengths of
+the captured fishes. A summary of the process is as follows: locations of both
+the fish and the laser dot in the image are identified using machine learning
+techniques. The laser's location in 3D space is determined using the location of
+the laser dot in the image, along with prior knowledge of the laser's location
+with respect to the camera. The fish segmentation mask is used to create a
+polygon of the fish's outline, after which PCA is performed to identify the axis
+of symmetry of the fish. The intersection of this line is used to find the head
+and tail of the fish, and the depth obtained from the laser dot is used to
+determine the locations of the head/tail points in 3D space. The distance
+between these points is what is used to calculate the length of the fish.
+
+A flowchart of the processing pipeline is included in
+Figure\nbsp\ref{fig:software-flowchart}.
+
+#+ATTR_LATEX: :scale 0.6
+#+ATTR_ORG: :width 200px
+#+CAPTION: Flowchart of software processing pipeline.
+#+label: fig:software-flowchart
+[[file:images/software_flowchart.pdf]]
+
+** Conclusion :ignore:
+\\
+Thus far we have described the system setup. The next chapter will describe the
+main contribution of this work -- the laser algorithms.
+* Algorithm Details
+<<sec:algorithms>>
+** Preamble :ignore:
+The specific contribution detailed in this work are the algorithms relating to
+the laser pointer -- both how the parameters of the laser with respect to the
+camera are determined, and, given those parameters are known, how the location
+of the laser dot can be found in the image.
 
 ** Pinhole Camera Model
+<<sec:pinhole>>
 All of the calculations shown assume that our camera follows the pinhole camera
 assumption. In air, this assumption is extremely common and is used in stereo
 cameras for object triangulation.
@@ -354,43 +499,6 @@ follow the pinhole camera model, especially with our current hardware setup. Our
 camera's transparent port separating the camera lens from the water is flat,
 meaning that Snell's law causes incoming light to refract. Measures to mitigate
 this problem are detailed in Section\nbsp[[sec:backscatter]].
-** Hardware Setup
-*** Overview :ignore:
-*** Camera
-For our own testing, we use an Olympus TG6, a common camera for divers to own
-for underwater photography. This camera itself is waterproof, though we use
-another protective housing around it.
-
-This is just one example of a camera that can be used for this system --
-theoretically any camera would work.
-*** Wide Angle Lens
-<<sec:backscatter>>
-
-To fit our pinhole camera assumption, we must have some way to rectify images
-taken by the camera. Distortions from Snell's law make this impossible using the
-standard camera model\nbsp\cite{Agrawal2012}, hence we add a corrective optic in
-order to correct these distortions.
-
-Developed by Backscatter, this corrective optic is designed to attach to the
-Olympus's underwater housing, and is typically used to widen the field of view
-for underwater photographers. Future work is required for us to understand how
-to model these Snell's law distortions better so we can ultimately remove it.
-
-In order to verify that the pinhole model was sufficient for this camera system,
-one metric we used was the mean squared error given by OpenCV's
-=calibrateCamera= function. This value was significantly lower when calibrating
-with the dome port on, and the images taken without the dome port showed a
-significantly higher amount of distortion.
-
-*** Laser Pointer
-The laser pointer is another off the shelf component. Many divers own laser
-pointers in order to gesture to others. Ideally, the laser is mounted rigidly to
-the camera -- in practice, due to manufacturing defects and small perturbations,
-the laser moves enough to cause significant error in the measurements. See
-Section\nbsp[[sec:laser-calibration]] for how this issue is solved.
-
-The color of the laser also has an effect, discussed in Section\nbsp[[sec:laser-comparison]].
-
 ** Quantities and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to the
 right in the image, the $y$ axis points downward in the image, and the $z$ axis
@@ -580,10 +688,10 @@ These cannot be measured directly for two reasons:
    dives and over time, the parameters need to be recalculated.
 Thus, we must use a calibration procedure.
 
-We have $n$ images from which we obtain laser points $p_i$. Here I describe two
-possible algorithms to solve this. A comparison of the two methods is presented
-in Section\nbsp[[sec:math-testing]].
-**** Hu
+We have $n$ images from which we obtain laser points $p_i$. Here we describe two
+possible algorithms to leverage this information to determine $\alpha$ and $\ell$. A
+comparison of the two methods is presented in Section\nbsp[[sec:math-testing]].
+**** Method 1: Gauss Newton Optimization
 We leverage the fact that the parameterized laser beam must intersect with
 the laser dot point to give us the following series of equations:
 \begin{equation}
@@ -718,7 +826,7 @@ We only want the first two columns of this, so we get
     J^i_{g\ell} =  \begin{bmatrix} I_{2\times 2} \\ 0\end{bmatrix}(I_{3\times3} - \frac{1}{\lVert p_i - \ell \rVert}\alpha(p_i - \ell)^T) \in \mathbb{R}^{3\times 2}
 \end{equation*}
 
-**** Atanasov
+**** Method 2: Averaging
 Once again assuming we have $n$ images with image $i$ corresponding with laser
 dot point $p_i$, a straightforward method to get our laser trajectory $\alpha$ can be
 obtained from a normed average over the differences between all points:
@@ -732,86 +840,16 @@ our ray, and pick the intersection of the ray defined by $p_k$ and $\alpha$ with
 $xy$ plane to be $\ell$.
 
 This method can be performed much faster than the former method, though while
-developing our device we have suck to using the Hu method since the constraints
+developing our device we have stuck to using the Hu method since the constraints
 and minimizing function are more explicit. Experiments comparing between the two
 methods can be found in Section [[sec:math-testing]].
 ** Conclusion :ignore:
 \\
 In this chapter, we have discussed the assumptions we make for this system to
 work, and outlined the algorithm for obtaining laser parameters, and using these
-to obtain the length of a fish. In the next chapter, we will discuss the
-procedures required to operate this device.
-* Procedures
-** Calibration Procedures
-*** Camera Calibration
-In order to obtain parameters like the focal length and location of the
-principal point, we must perform calibration of the camera. This is done using
-Zhang's procedure\nbsp\cite{Zhang2000}, where many images of a checkerboard are
-taken, and parameters are found such that known dimensions and regularity of the
-checkerboard are satisfied.
-
-Currently, this procedure must be done underwater. We do the described procedure
-in a swimming pool, with the corrective optic attached. OpenCV's
-=cameraCalibrate= function provides a straightforward way to obtain camera
-intrinsics and lens distortion parameters. We have experimentally observed that
-the camera parameters in salt water differ from the parameters in fresh water,
-which is discussed in Section\nbsp[[sec:fw-vs-sw]].
-*** Laser Calibration
-<<sec:slate-calibration>>
-Since our laser mount is not stable enough to guarantee that laser parameters
-stay consistent between dives, we require a laser calibration at the beginning
-of every dive. To do this, we assume that we know the optical frame coordinates
-of each laser dot $p_i$. This requires that we have some kind of depth reference.
-
-The first method that we tested was to use the same checkerboard pattern used in
-camera calibration. The main reasoning for this method was that there are two
-parts to this method for which OpenCV provides functionality for - detecting
-corners of specifically the checkerboard pattern, and calculating a 3D
-transformation given object points and corresponding points in an image.
-However, in the field, requiring that divers carry a large and heavy
-checkerboard for every dive is a large ask.
-
-We have developed a procedure that does not utilize a checkerboard, and can
-instead be done with a dive slate -- something that most divers will carry. An
-example of one of these is shown in Figure\nbsp\ref{fig:slate-calibration}. We add
-pieces of duct tape in an arbitrary pattern on one side to make the slate more
-featureful. We also make the assumption that the slate remains close to parallel
-with the image plane.
-
-#+ATTR_LATEX: :scale 0.4
-#+ATTR_ORG: :width 200px
-#+CAPTION: An example of a slate calibration image.
-#+label: fig:slate-calibration
-[[file:images/slate-calibration.JPG]]
-
-We assume that we have a scanned copy of the dive slate, and hence the physical
-measurements of the duct tape pattern. Assuming that a correspondence can be
-drawn between the corners of the scan representation and the corners within the
-image, a transformation between the two can be found. This is known as a
-Perspective-N-Point (PnP) problem, and OpenCV has a =solvePnP= function that
-makes this relatively straightforward.
-
-Results demonstrating this method compared to the checkerboard are shown in
-Section\nbsp[[sec:field-calibration-testing]].
-
-** Diver Operation
-In the field, after calibrating the laser, operating the camera is fairly
-straightforward. The diver will take a picture of nearby fish as normal, with
-the restriction that the laser dot must be trained on the fish. Note that we
-expect the diver to ensure that two conditions are met:
-1. The head and tail points of the fish are visible in the image.
-2. The laser is both present and visible on the fish.
-Excerpts from the field manual are provided in Appendix [[sec:user-manual]].
-** Data Offloading
-After the data has been collected, the operator must offload the data to be
-processed externally. We are currently in the process of developing software in
-order to perform this processing, though details are out of scope of this
-document.
-** Conclusion :ignore:
-\\
-Herein we have summarized the procedures required to operate the FishSense Lite
-camera module. The next chapter details how this camera module has been tested.
-* Testing
+to obtain the length of a fish. In the next chapter, we will discuss
+experiements done to test the device.
+* Experiments
 <<sec:testing>>
 So far we have mentioned several stages in the processing pipeline that need to be tested:
 1. The laser calibration procedure from Section\nbsp[[sec:slate-calibration]].
@@ -862,33 +900,6 @@ Fred is shown in Figure \ref{fig:fred}.
 #+LABEL: fig:fred
 [[file:images/fred.jpg]]
 
-** Laser Calibration Procedure
-<<sec:field-calibration-testing>> We have been using the checkerboard method as
-the standard of calibration, as this can be easily automated. However, we want
-to assess how effective slate calibration is in theory, as it would be a huge
-asset to people using the device in the field. Luckily for us, the divers at
-REEF were able to test the slate calibration with a slate of their own
-construction. The methodology was as follows: each of their seven camera units
-were calibrated using the same slate, and the length of the slate, show in
-Figure\nbsp\ref{fig:slate-calibration-measurement}, was measured using the newly
-obtained laser parameters. Several measurements were taken per image to create a
-box and whisker plot, shown in Figure\nbsp\ref{fig:slate-calibration}. We can see
-that the measurements are fairly consistent, which demonstrates that the
-calibration method is indeed viable.
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: The length measured in the slate calibration experiment.
-#+LABEL: fig:slate-calibration-measurement
-[[file:images/slate-calibration-measurement.png]]
-
-
-#+ATTR_LATEX: :scale 0.8
-#+ATTR_ORG: :width 200px
-#+CAPTION: Comparisons of slate measurements across different devices.
-#+LABEL: fig:slate-calibration
-[[file:images/slate-calibration.png]]
-
 ** Laser Calibration Algorithm
 <<sec:math-testing>>
 
@@ -908,6 +919,35 @@ solutions. It is possible that the Atanasov method may happen to yield the laser
 parameter solution that minimizes the function defined in the Hu method. My
 current hypothesis is that these methods are provably identical, though work to
 confirm this is still being done.
+
+** Laser Calibration Procedure
+<<sec:field-calibration-testing>>
+
+We have been using the checkerboard method as the standard of calibration, as
+this can be easily automated. However, we want to assess how effective slate
+calibration is in theory, as it would be a huge asset to people using the device
+in the field. Luckily for us, the divers at REEF were able to test the slate
+calibration with a slate of their own construction. The methodology was as
+follows: each of their seven camera units were calibrated using the same slate,
+and the length of the slate, show in
+Figure\nbsp\ref{fig:slate-calibration-measurement}, was measured using the newly
+obtained laser parameters. Several measurements were taken per image to create a
+box and whisker plot, shown in Figure\nbsp\ref{fig:slate-calibration}. We can see
+that the measurements are fairly consistent, which demonstrates that the
+calibration method is indeed viable.
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: The length measured in the slate calibration experiment.
+#+LABEL: fig:slate-calibration-measurement
+[[file:images/slate-calibration-measurement.png]]
+
+
+#+ATTR_LATEX: :scale 0.8
+#+ATTR_ORG: :width 200px
+#+CAPTION: Comparisons of slate measurements across different devices.
+#+LABEL: fig:slate-calibration
+[[file:images/slate-calibration.png]]
 
 ** Distance Measurements
 <<sec:distance-test>>
