@@ -217,7 +217,7 @@ stereo video generates a large amount of data that requires significant effort
 to store and process\nbsp\cite{Tueller2021}.
 
 Commercial stereo video solutions include the AQ1 AM100\nbsp\cite{Shafait2017} and
-the AKVA Vicass HD\nbsp\cite{Churnside2012}, typically used in aquaculture. Such
+the AKVA Vicass HD\nbsp\cite{Churnside2012}, intended for use in aquaculture. Such
 systems are also costly and require a tether to a surface-side computer with
 proprietary software that must be used to manage the system. This limits the
 regions of the world where the data can be collected as it requires scientists
@@ -247,8 +247,8 @@ between the two laser dots can be used as a reference length to measure the
 entire fish\nbsp\cite{Rohner2011, Heppell2012}. For these measurements to be
 accurate, both lasers must be perfectly parallel with each other and the camera
 axis. Depending on manufacturing tolerances, such a requirement may mean that
-lasers must be carefully selected. Typically, this system is calibrated by
-measuring the distance between the two laser dots at a large distance before a
+lasers must be carefully selected. These systems are calibrated by measuring the
+distance between the two laser dots at a large distance before a
 dive\nbsp\cite{Heppell2012}. Lengths are then calculated using the known distance
 between two points and the projection of the fish onto the camera. While length
 estimation becomes simple using this method, the cost of two lasers and time for
@@ -266,19 +266,30 @@ distance apart up to 15m from the source, which can be challenging to do in a
 field setting.
 
 *** Acoustic Methods
-Hydroacoustic sampling methods are generally more effective when visibility
-conditions are poor. The primary related technology in this category is sonar,
-which involves actively sending sound waves and using the signal as it echoes
-back to construct an image of the scene.
+The primary related technology in this category is sonar, which involves
+actively sending sound waves and using the signal as it echoes back to construct
+an image of the scene. As we are interested in studying particular fish
+populations, it is also important that we are able to identify the species of
+fish being imaged, a relatively recent development when it comes to acoustic
+methods. Technologies like Dual-frequency Identification Sonar
+(DIDSON)\nbsp\cite{Belcher2002} and Adaptive Resolution Imaging Sonar
+(ARIS)\nbsp\cite{Jones2021} both take advantage of many individual sonic beams and
+high frequencies in order to construct a high-fidelity sonic image of the scene.
+Both DIDSON and ARIS technologies have been used to measure fish
+lengths\nbsp\cite{Burwen2010,Cook2019} and identify fish
+species\nbsp\cite{Langkau2012,Jones2021}. Sonar is far more effective than
+camera-based techniques when visibility conditions are poor. However, they are
+by far the most expensive option listed here. A system in 2006 was said to have
+cost around 20,000USD\nbsp\cite{Mueller2006}. We were unable to find specific
+prices for modern imaging sonar units, though prices have ranged from tens of
+thousands to even hundreds of thousands of US dollars.
 
-As we are interested in studying particular fish populations, it is also
-important that we are able to identify the species of fish being imaged, which
-is a fairly recent development when it comes to acoustic methods. Technologies
-like Dual-frequency Identification Sonar (DIDSON) and Adaptive Resolution
-Imaging Sonar (ARIS) provide sufficient resolution to resolve morphological
-features on individual fish. These higher-fidelity sonar units are
-
-These are by far the most expensive option listed.
+Passive techniques -- monitoring sounds that come from the fish themselves --
+have also more recently been used as a way to study fish
+populations\nbsp\cite{Fornshell2013}. These have shown to be an effective way to
+study species distribution\nbsp\cite{VanHoeck2021}, or for recording sightings of a
+targeted species\nbsp\cite{Bolgan2023}, though we are unaware of any existing
+literature that attempts to estimate size using this technology.
 
 *** Laser Rangefinding
 Our system uses only a single laser to measure distance, which removes the need
@@ -299,8 +310,7 @@ finder as a separate module from a regular digital camera\nbsp\cite{Jaquet2006,B
 Data from both modules must be combined and processed manually to
 obtain lengths\nbsp\cite{Jaquet2006, Monkman2019}, which our platform improves upon.
 
-** Conclusion :ignore:
-\\
+** Outline
 The rest of this work will be focused on the algorithms behind the length
 extraction, specifically how the laser parameters are determined, how these are
 use to calculate the coordinates of the laser dot in physical space, and how
@@ -330,7 +340,9 @@ Figure\nbsp\ref{fig:fsl} shows an example of one such camera system.
 Our system relies on the diver taking images with the laser beam pointed on the
 fish. With just the image, as well as a priori knowledge of the laser beam
 parameters, we can then use this to obtain a length of the fish within the
-image.
+image. A long-term goal we have is that this data can be mapped to region, a
+specific species and even a specific individual fish, which would allow us to
+create a map of global fish population data.
 ** Hardware Setup
 *** Overview :ignore:
 This is the physical device that divers would use to take measurements. It is
@@ -366,15 +378,16 @@ significantly higher amount of distortion.
 **** Notes :noexport:
 include ana's charts here? that might be sufficient justification
 
-*** Laser Pointer
+*** Laser and Mount
 The laser pointer is another off the shelf component. Many divers own laser
-pointers in order to gesture to others. Ideally, the laser is mounted rigidly to
-the camera -- in practice, due to manufacturing defects and small perturbations,
-the laser moves enough to cause significant error in the measurements. See
-Section\nbsp[[sec:laser-calibration]] for how this issue is solved.
+pointers in order to gesture to others, which further reduces the cost of the
+overall hardware. This laser is mounted to the camera's housing with a
+3D-printed polylactic acid (PLA) mount. Due to manufacturing defects and small
+perturbations, that may occur in transit, the laser moves enough to cause
+significant error in the measurements. See Section\nbsp[[sec:laser-calibration]] for how
+this issue is solved.
 
 The color of the laser also has an effect, discussed in Section\nbsp[[sec:laser-comparison]].
-
 ** Operation
 *** Overview :ignore:
 This section details how the device would be used in the field.
@@ -444,12 +457,13 @@ population quite accurately, the precision with which this is done can vary
 wildly between divers\nbsp\cite{Harvey2002}. Within the study conducted by Harvey
 et. al., we see that divers can be incorrect about the length of a fish by up to
 20%. As our device is meant to be a supplement for a similar experiment setup,
-we aim to perform as well good or better than this.
+we aim to perform as well or even better than this.
 
 ** Conclusion :ignore:
 \\
 Thus far we have described the system setup. The next chapter will describe the
-main contribution of this work -- the laser algorithms.
+main contribution of this work -- the algorithms underlying distane estimation
+that utilize the laser.
 * Algorithm Details
 <<sec:algorithms>>
 ** Preamble :ignore:
@@ -580,10 +594,12 @@ Figure\nbsp\ref{fig:diag} illustrates all the aforementioned quantities in one p
 
 ** Finding the Distance to the Fish
 <<sec:distance-finding>>
+
 We assume that this laser beam intersects the fish at an unknown point $p$. As
-imaged by the camera, that this laser dot will have known pixel
-coordinates $\mathfrak{p}$. This corresponds to a point $p_\text{image}$ on the
-image plane, defined as
+imaged by the camera, this laser dot will have known pixel coordinates
+$\mathfrak{p}$. This corresponds to a point $p_\text{image}$ on the image plane,
+defined as
+
 \[
 p_\text{image} = \begin{bmatrix}
 \mathfrak{p}_x \\
@@ -600,10 +616,10 @@ v = \frac{p_\text{image}}{\lVert p_\text{image}\rVert}
 
 This creates two rays that converge toward $p$: the laser beam, and the ray from
 the camera that passes through $\mathfrak{p}$ on the image plane. By projecting
-both $\vec{\ell p}$ and $\vec{O v}$ out until they intersect, we can identify where
+both $\vec{\ell p}$ and $\vec{v}$ out until they intersect, we can identify where
 $p$ is.
 
-More specifically, we define scale factors $\lambda_1$ and $\lambda_2$ such that
+More specifically, we can identify parameters $\lambda_1$ and $\lambda_2$ such that
 \[
 \ell + \lambda_1\alpha = \lambda_2v
 \]
@@ -624,9 +640,9 @@ We can refactor the above relationship to be the form
 
 In practice, however, this relationship does not necessarily hold, because the
 laser dot as observed in the image may be in a particular pixel that does not
-match up perfectly with where the ray $\vec{Ov}$ intersects with the image
-plane. This causes the rays to come very close to each other, but not touch,
-meaning Equation\nbsp\ref{eq:find-laser} has no solution.
+match up perfectly with where $\lambda_2 \vec{v}$ intersects with the image plane.
+This causes the rays to come very close to each other, but not touch, meaning
+Equation\nbsp\ref{eq:find-laser} has no solution.
 
 
 We can, however, obtain $\lambda_1$ and $\lambda_2$ values that minimize the difference
@@ -1287,7 +1303,7 @@ Table\nbsp\ref{tab:comparison} shows the full list of pool tests conducted while
 | 2024-05-09 | Redo the range accuracy test from previous week, as well as attempt new camera calibration                                 |
 |------------+----------------------------------------------------------------------------------------------------------------------------|
 
-** FishSense Lite User Procedure
+** FishSense Lite User Manual
 <<sec:user-manual>>
 *** Setup
 1. Take the camera underwater and burp the lens. When reattaching the lens, ensure that it is tightly attached.  The lens needs to remain in the same position it originally calibrated.
@@ -1328,8 +1344,8 @@ The following settings are the ones for which the camera was tested, and to keep
 - Output format LF + raw
 - Still image stabilization on
 
-** Imaging in Water
-Imaging water is typicall quite a challenging
+** Light Attenuation In Water
+The optical properties of water have long posed a challenge
 
 Figure\nbsp\ref{} shows the level of light attenuation in water.
 
