@@ -39,15 +39,15 @@ guidance on writing this document, Ryan Kastner, for guiding us through the
 bureaucracies of research funding, and Nikolay Atanasov, for helping me smooth
 out some of the math-heavy portions of this document.
 
-Thank you to Christopher Crutchfield, who has dealt with far more logistical
-and managerial issues than a PhD student should ever have to deal with. Thank
-you to Nathan Hui, whose stern engineering and management advice was vital to us
-making it this far. Thank you to all undergraduates who have worked with the
-FishSense project: Vivaswat Suresh, Raghav Maddukuri, Avik Ghosh, Allen Kan, Ana
-Perez, Hamish Grant, Harish Vasanth, Shaurya Raswan, Kyle Tran, Sam Prestrelski,
-Adrian Zugehar, and Jennifer Xu. Thank you also to the REU students who helped us gather
-valuable data despite unreasonably short notice: Josie Dominguez, Jordan
-Reichhart, Ela Lucas, and Nick Reyes.
+Thank you to Christopher Crutchfield, whose mentorship and companionship has
+been invaluable throughout this process. Thank you to Nathan Hui, whose stern
+engineering and management advice was vital to us making it this far. Thank you
+to all undergraduates who have worked with the FishSense project: Vivaswat
+Suresh, Raghav Maddukuri, Avik Ghosh, Allen Kan, Ana Perez, Hamish Grant, Harish
+Vasanth, Shaurya Raswan, Kyle Tran, Sam Prestrelski, Adrian Zugehar, Claire
+Wang, Jennifer Xu, Louis King, and Grace Liu. Thank you also to the REU students
+who helped us gather valuable data despite unreasonably short notice: Josie
+Dominguez, Jordan Reichhart, Ela Lucas, and Nick Reyes.
 
 Thank you to Professor Brice Semmens, Jack Elstner, Alli Candelmo, Jen Loch and
 the members of REEF for testing this system and providing us with the initial
@@ -65,7 +65,8 @@ during my time in graduate school. Your humor and light-heartedness has kept me
 going.
 
 Thank you to Matei Gardus, who taught me how to use emacs org-mode several years
-ago, and is what this document is written with.
+ago, and has helped me tremendously with the formatting aspect of writing this
+document.
 
 Thank you to the members of UCSD Quizbowl, in particular to Alistair Gray, who
 is a dear friend, and to Praveen Nair, who asked me to include the Dr. Seuss
@@ -81,11 +82,15 @@ Game communities, for allowing me to grow emotionally that much more.
 Finally, thank you to my parents, whose continuous support has allowed the
 opportunity to do all of this.
 
-Chapters 2, 3 and 4 contain material that is being prepared for submission. The
-thesis author was the primary investigator and author of this material.
+Chapters 2, 3 and 4 contain material that is being prepared for submission.
+Christopher Crutchfield, Kyle Hu, Vivaswat Suresh, Ana Perez, Hamish Grant,
+Nathan Hui, Jack Elstner, Dylan Heppell, Jen Loch, Alli Candelmo, Brice Semmens,
+Curt Schurgers, Ryan Kastner. The thesis author was the primary investigator and
+author of this material.
 
 An additional thank you to Nathan Hui and Jack Elstner for collecting some of
-the data presented in Chapter 4.
+the data presented in Chapter 4, which is not included in the aforementioned
+upcoming publication.
 
 #+END_acknowledgements
 
@@ -118,12 +123,18 @@ true length, similar to the error margins of visual estimation.
 * Introduction
 ** Preamble :ignore:
 Marine ecosystems provide humankind many resources which we depend on. Marine
-agriculture is an important source of food worldwide, and approximately 20% of
-the global population primarily depend on it. Data that can be used to evaluate
-the health of our oceans is therefore essential for us to understand the
-potential impacts of overfishing and climate change. In order to be able to
-quantify the effects of climate change on fish, we require some metric with
-which we can study how healthy fish are on a population level.
+agriculture is an important source of food worldwide, and approximately 3
+billion people depend on seafood as a significant source of protein\nbsp\cite{WWF}.
+Data that can be used to evaluate the health of our oceans is therefore
+essential for us to understand the potential impacts of overfishing and climate
+change.
+
+Fish in particular are a significant part of this -- fish populations are known
+to be in decline as a result of overfishing and climate change, which has dire
+consequences for both food stocks and marine ecosystems as a
+whole\nbsp\cite{Hutchings2004,Myers2003}. In order to be able to quantify the
+effects of climate change on fish, we require some metric with which we can
+study how healthy fish are on a population level.
 
 One such way of doing this is to obtain a fish length distribution. By examining
 such distributions over time, scientists can identify whether a population is
@@ -133,12 +144,11 @@ into place to assist with the recovery of a fish population, it is within the
 interest of scientists to document the success of these protective measures. Our
 collaborators have performed a study of a particular species of Nassau Grouper,
 and have done this fairly successfully by looking at annual spawning
-aggregations\nbsp\cite{Heppell2012}.
-
-The second is fishery management. Fisheries want to ensure that they extract as
-much catch as possible without irreparably damaging their stock, meaning that
-detailed, real-time information about population health is vital, especially
-where other data are unavailable\nbsp\cite{Balde2019}.
+aggregations\nbsp\cite{Heppell2012}. The second is fishery management. Fisheries
+want to ensure that they extract as much catch as possible without irreparably
+damaging their stock, meaning that detailed, real-time information about
+population health is vital, especially where other data are
+unavailable\nbsp\cite{Balde2019}.
 
 ** Current Methods for Fish Length Studies
 Current global fish length data often come from catch and release programs. In
@@ -147,12 +157,12 @@ one such program, which as of 2024, consists of over 1800 volunteer anglers.
 These anglers use hook-and-line procedures to catch the fish, from which length
 is measured directly with a tape measure before the fish is released. This
 length information is combined with metrics like catch per unit effort to
-estimate the biomass of a population. However, fishing takes time - in their
+estimate the biomass of a population. However, fishing takes time -- in their
 most recent study, each examined location took 3 days to gather data
 for\nbsp\cite{Ziegler2024}. In addition, stress caused by barotrauma and air
 exposure can cause fish to be less able to find food or evade predators, which
 reduces their life expectancy\nbsp\cite{Campbell2010}. In summary, these expeditions
-incur a lot of overhead for relatively little gain, may be dangerous for the
+are logistically difficult to set up, may be dangerous for the
 anglers\nbsp\cite{Rohner2011}, and also the fish being
 studied\nbsp\cite{Ramsay2009,Campbell2010}. Thus a low effort, non-invasive approach
 is desirable.
@@ -318,14 +328,14 @@ obtain lengths\nbsp\cite{Jaquet2006, Monkman2019}, which our platform improves u
 
 ** Outline
 The rest of this work will be focused on the algorithms behind the length
-extraction, specifically how the laser parameters are determined, how these are
-use to calculate the coordinates of the laser dot in physical space, and how
-that in turn is used to get the fish length. Chapter\nbsp[[sec:system-overview]] will
-give a brief overview of FishSense Lite as a whole. Chapter [[sec:algorithms]] will
-provide an in-depth description of the laser algorithms. Chapter [[sec:testing]]
-will show how we have tested our system and where sources of error come from.
-Finally, Chapter [[sec:conclusion]] will summarize the content of this work and
-future work that needs to be done on the system.
+extraction for FishSense Lite, specifically how the laser parameters are
+determined, how these are use to calculate the coordinates of the laser dot in
+physical space, and how that in turn is used to get the fish length.
+Chapter\nbsp[[sec:system-overview]] will give a brief overview of FishSense Lite as a
+whole. Chapter [[sec:algorithms]] will provide an in-depth description of the laser
+algorithms. Chapter [[sec:testing]] will show how we have tested our system and
+where sources of error come from. Finally, Chapter [[sec:conclusion]] will summarize
+the content of this work and future work that needs to be done on the system.
 
 * System Overview
 <<sec:system-overview>>
@@ -1329,21 +1339,21 @@ Table\nbsp\ref{tab:test-list} shows the full list of pool tests conducted while 
 
 * FishSense Lite User Manual
 <<sec:user-manual>>
-*** Setup
+** Setup
 1. Take the camera underwater and burp the lens. When reattaching the lens, ensure that it is tightly attached.  The lens needs to remain in the same position it originally calibrated.
 2. Turn on the laser by turning the back end clockwise.
 3. Take a validation photo using the method specified in Section
 
-*** Use
+** Use
 1. When the laser is in use, aim it towards the center of the body mass of the fish. Ensure that the laser is not pointed directly toward a person.
 2. In order to image fish, it is not necessary to look through the camera's viewport.  If the laser is visible on the fish, it should also be visible in the camera.
 3. Refer to the appropriate camera manual for photo and video collection procedures. Take photos with fish as close to flat in the image as possible; otherwise, the length measurement may be inaccurate.
 
-*** Teardown
+** Teardown
 1. When data collection is complete, turn off the laser.
 2. Offload data to a hard disk if necessary.
 
-*** Guidelines
+** Guidelines
 1. Do not use the zoom function on the camera. This changes the focal length, rendering our calibration useless.
 2. Avoid touching or moving the laser directly. Do not use the laser as a handle. The laser must be rigidly attached and unmoved for calibration values to hold true.
 3. The laser must be pointed directly at the fish, as close to its center of body mass as possible.
@@ -1351,7 +1361,7 @@ Table\nbsp\ref{tab:test-list} shows the full list of pool tests conducted while 
 5. Ensure the fish is located within the effective range of 0.5 to 5 meters from the camera. With 3 meters being the ideal distance.
 6. The fish must be illuminated.
 
-*** Camera Settings
+** Camera Settings
 The following settings are the ones for which the camera was tested, and to keep the data consistent, we recommend that you use them as well. Unless specified, all these settings can be found by pressing the "OK" button.
 - Program auto (set the wheel to P)
 - Flash off
