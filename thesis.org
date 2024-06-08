@@ -98,16 +98,16 @@ upcoming publication.
 #+BEGIN_dissertationabstract
 Ecologists are interested in studying fish length distributions as a metric for
 the health of fish populations, both for fishery management and to gauge the
-effect of policies and worsening ocean conditions in a small area. Current
-methods of gathering these data are time intensive, require expensive equipment
-and/or training. Approaching this issue with citizen science -- utilizing
-efforts from the general public -- allows us to gather much more data about fish
-populations that would currently be costly to acquire. We are working towards
-developing a device and software platform that allows recreational divers to
-take pictures of fish, and have the images processed such that length and
-species information are determined automatically.
+effect of policies and worsening ocean conditions. Current methods of gathering
+these data are time intensive, require expensive equipment and/or training.
+Approaching this issue with citizen science -- utilizing efforts from the
+general public -- allows us to gather much more data about fish populations that
+would currently be costly to acquire. We are working towards developing a device
+and software platform that allows recreational divers to take pictures of fish,
+and have the images processed such that length and species information are
+determined automatically.
 
-This work focuses on the mechanism under which fish length is calculated. The
+This work focuses on the mechanism through which fish length is calculated. The
 device incorporates a standard laser pointer with a consumer waterproof camera,
 and uses the location of the laser dot in the object to determine the distance
 between the object and the camera. We also discuss methods to ensure that the
@@ -122,12 +122,11 @@ true length, similar to the error margins of visual estimation.
 #+LATEX: \mainmatter
 * Introduction
 ** Preamble :ignore:
-Marine ecosystems provide humankind many resources which we depend on. Marine
-agriculture is an important source of food worldwide, and approximately 3
-billion people depend on seafood as a significant source of protein\nbsp\cite{WWF}.
-Data that can be used to evaluate the health of our oceans is therefore
-essential for us to understand the potential impacts of overfishing and climate
-change.
+Marine ecosystems provide humankind many resources which we depend on. These
+ecosystems an important source of food worldwide, and approximately 3 billion
+people depend on seafood as a significant source of protein\nbsp\cite{WWF}. Data
+that can be used to evaluate the health of our oceans is therefore essential for
+us to understand the potential impacts of overfishing and climate change.
 
 Fish in particular are a significant part of this -- fish populations are known
 to be in decline as a result of overfishing and climate change, which has dire
@@ -162,16 +161,15 @@ most recent study, each examined location took 3 days to gather data
 for\nbsp\cite{Ziegler2024}. In addition, stress caused by barotrauma and air
 exposure can cause fish to be less able to find food or evade predators, which
 reduces their life expectancy\nbsp\cite{Campbell2010}. In summary, these expeditions
-are logistically difficult to set up, may be dangerous for the
-anglers\nbsp\cite{Rohner2011}, and also the fish being
-studied\nbsp\cite{Ramsay2009,Campbell2010}. Thus a low effort, non-invasive approach
-is desirable.
+are logistically difficult to set up, and are also harmful to the fish being
+studied\nbsp\cite{Ramsay2009,Campbell2010}.
 
-This approach also poses an issue for marine protected areas (MPAs), within
-which fishing may be restricted to certain species, or completely illegal
+Catch and release fishing also poses an issue for marine protected areas (MPAs),
+within which fishing may be restricted to certain species, or completely illegal
 outright. To study populations within these areas, adjacent fishing activities
 are sometimes used to infer the abundance of a particular
-species\nbsp\cite{Ziegler2024}.
+species\nbsp\cite{Ziegler2024}. Thus, in order to better understand populations
+within MPAs, a non-invasive method is desirable.
 
 A non-invasive alternative is the roving diver survey, where a team of divers
 conducts a visual census of fish species and their lengths within the MPA.
@@ -189,7 +187,33 @@ captured image, and due to the simplicity and accessibility of the hardware
 construction, it can be utilized by recreational divers to get much larger data
 coverage.
 
-** Related Work
+** Citizen Science
+Our device seeks to take advantage of efforts from the general public in order
+to gather as much data as possible. This is known as citizen science. Due to the
+overhead of the procedures or equipment required to study fish in particular,
+there are no methods that we know of currently that are accessible to the
+general public, which we hope to address with our current work.
+
+This approach to data collection has been tried and tested in other fields.
+Foldit\footnote{https://fold.it/} is one such example that has been used to
+identify new protein structures, using a video-game like interface to get
+players to solve puzzles related to protein folding. Citizen scientists using
+Foldit have been shown to be able to recreate existing protein structures, and
+even provide new ways of creating proteins that professional scientists may not
+consider\nbsp\cite{Koepnick2019}.
+
+A example related to species identification is iNaturalist, a smartphone
+application that enables its users to capture images of terrestrial flora and
+fauna, and upload them to an online platform. A community of naturalists are
+then able to view these images and identify the species of the subject. This
+community sourced dataset is showing promise in studies of individual
+taxa\nbsp\cite{Rosa2022}, discoveries of new species\nbsp\cite{Winterton2020}, and
+species distributions of exotic species\nbsp\cite{Vendetti2018}. Due to this being a
+smartphone app, these data primarily consist of terrestrial life, or life that
+is otherwise only visible above water. We hope to both provide additional data
+for fish specifically, as well as provide length data that can be analyzed.
+
+** Related Technologies
 <<sec:existing-technologies>>
 
 A technological approach to measuring an objects size involves first capturing
@@ -201,20 +225,20 @@ A summary of these underwater ranging methods can be seen in
 Table\nbsp\ref{tab:comparison}, including FishSense Lite.
 
 #+ATTR_LATEX: :align |c||c|c|c|c| :width 70%
-#+CAPTION: Comparison of different underwater ranging techniques.
+#+CAPTION: Comparison of different underwater ranging techniques. The approach that FishSense Lite uses is in bold.
 #+LABEL: tab:comparison
-|--------------------+-------------------------+---------------------------------+--------------+--------------------------|
-| Technique          | Est. Cost (USD)         | Max. Relative Error             | Ease of Use  | Range                    |
-|--------------------+-------------------------+---------------------------------+--------------+--------------------------|
-|--------------------+-------------------------+---------------------------------+--------------+--------------------------|
-| Stereo Video       | 4600\nbsp\cite{SeaGIS}      | 2.5%\nbsp\cite{Harvey2001}          | Intermediate | 2-10m\nbsp\cite{Mallet2014}  |
-|--------------------+-------------------------+---------------------------------+--------------+--------------------------|
-| Laser Caliper      | 600\nbsp\cite{BERGERON2007} | 12%\nbsp\cite{Stock2021}            | Intermediate | 2-5m\nbsp\cite{Stock2021}    |
-|--------------------+-------------------------+---------------------------------+--------------+--------------------------|
-| Acoustic Methods   | 20k\nbsp\cite{Mueller2006}  | 1.1% - 35.2%\nbsp\cite{Mueller2006} | Hard         | 1-16m\nbsp\cite{Mueller2006} |
-|--------------------+-------------------------+---------------------------------+--------------+--------------------------|
-| Laser Rangefinding | 1200                    | 15%                             | Easy         | 2-5m                     |
-|--------------------+-------------------------+---------------------------------+--------------+--------------------------|
+|----------------------+-------------------------+---------------------------------+--------------+--------------------------|
+| Technique            | Est. Cost (USD)         | Max. Relative Error             | Ease of Use  | Range                    |
+|----------------------+-------------------------+---------------------------------+--------------+--------------------------|
+|----------------------+-------------------------+---------------------------------+--------------+--------------------------|
+| Stereo Video         | 4600\nbsp\cite{SeaGIS}      | 2.5%\nbsp\cite{Harvey2001}          | Intermediate | 2-10m\nbsp\cite{Mallet2014}  |
+|----------------------+-------------------------+---------------------------------+--------------+--------------------------|
+| Laser Caliper        | 600\nbsp\cite{BERGERON2007} | 12%\nbsp\cite{Stock2021}            | Intermediate | 2-5m\nbsp\cite{Stock2021}    |
+|----------------------+-------------------------+---------------------------------+--------------+--------------------------|
+| Acoustic Methods     | 20k\nbsp\cite{Mueller2006}  | 1.1% - 35.2%\nbsp\cite{Mueller2006} | Hard         | 1-16m\nbsp\cite{Mueller2006} |
+|----------------------+-------------------------+---------------------------------+--------------+--------------------------|
+| *Laser Rangefinding* | 1200                    | 15%                             | Easy         | 2-5m                     |
+|----------------------+-------------------------+---------------------------------+--------------+--------------------------|
 
 *** Stereo Camera Systems
 A standard method for collecting fish length measurements uses stereo video
@@ -228,7 +252,7 @@ systems\nbsp\cite{Mallet2014}. While stereo-DOV is a more cost-effective solutio
 than deploying a remote system, the current state of the art still requires
 purchasing proprietary hardware and software\nbsp\cite{Goetze2019}, which can be
 prohibitively expensive for a citizen scientist at a minimum of
-$4,600USD\nbsp\cite{SeaGIS} for a scientist grade stereo video system. In addition,
+4,600USD\nbsp\cite{SeaGIS} for a scientist grade stereo video system. In addition,
 stereo video generates a large amount of data that requires significant effort
 to store and process\nbsp\cite{Tueller2021}.
 
@@ -240,10 +264,10 @@ regions of the world where the data can be collected as it requires scientists
 to interact with the system. The tether also limits the depths at which the data
 can be collected.
 
-A previous FishSense "Pro" device has been attempted using proprietary stereo
-camera units\nbsp\cite{Paxson2022, Tueller2021}. These attempts involved using an
-Intel Realsense D455 -- a depth camera that used both stereo cameras and
-structured light in order to infer depth information. This camera was paired
+Our team has also attempted to use proprietary stereo camera units to build a
+FishSense "Pro" device\nbsp\cite{Paxson2022, Tueller2021}. These attempts involved
+using an Intel Realsense D455 -- a depth camera that used both stereo cameras
+and structured light in order to infer depth information. This camera was paired
 with a NVIDIA Jetson TX2 for onboard video processing, and was fully contained
 in a waterproof enclosure with onboard power and storage. Since the Realsense
 was up against a flat acrylic port, distortions from Snell's law caused both the
@@ -272,14 +296,14 @@ the minute readjustments waste valuable resources for researchers. The dual
 laser mechanism also requires that the object is larger than the distance of the
 two lasers, meaning fish smaller than the offset cannot be measured.
 
-This system has been used to document the recovery of a population of
-Nassau Grouper over 7 years, in order to quantify the effectiveness of recovery
+This system has been used to document the recovery of a population of Nassau
+Grouper over 7 years, in order to quantify the effectiveness of recovery
 efforts\nbsp\cite{Heppell2012}. While such a system was also demonstrated to be more
 effective than visual estimation, it also requires manufacturing a
 custom-machined aluminum mount, which is not easily accessible for most divers.
 Calibration of the system also involves verifying that the beams are the same
 distance apart up to 15m from the source, which can be challenging to do in a
-field setting.
+field setting. This was
 
 *** Acoustic Methods
 The primary related technology in this category is sonar, which involves
@@ -379,18 +403,15 @@ theoretically any camera would work.
 With just the waterproof housing, Snell's law distorts images in such a way that
 a relationship between lengths in the image and lengths in the real world are
 difficult to obtain\nbsp\cite{Agrawal2012}. To mitigate the effects of this, we use
-a corrective optic. Developed by Backscatter, this corrective optic is designed
+a corrective optic, which allows us to use a simple camera model described in
+Section\nbsp[[sec:pinhole]]. Developed by Backscatter, this corrective optic is designed
 to attach to the Olympus's underwater housing, and is typically used to widen
 the field of view for underwater photographers. Future work is required for us
 to understand how to model these Snell's law distortions better so we can
-ultimately remove it. This allows us to use a simple camera model described in
-Section\nbsp[[sec:pinhole]].
+ultimately remove it.
 
-In order to verify that this model was sufficient for this
-camera system, one metric we used was the mean squared error given by OpenCV's
-=calibrateCamera= function. This value was significantly lower when calibrating
-with the dome port on, and the images taken without the dome port showed a
-significantly higher amount of distortion.
+In order to justify that we keep the corrective optic on during operation, we
+conducted simulations k
 
 **** Notes :noexport:
 include ana's charts here? that might be sufficient justification
@@ -401,10 +422,10 @@ pointers in order to gesture to others, which further reduces the cost of the
 overall hardware. This laser is mounted to the camera's housing with a
 3D-printed polylactic acid (PLA) mount. Due to manufacturing defects and small
 perturbations, that may occur in transit, the laser moves enough to cause
-significant error in the measurements. See Section\nbsp[[sec:laser-calibration]] for how
-this issue is solved.
-
-The color of the laser also has an effect, discussed in Section\nbsp[[sec:laser-comparison]].
+significant variablility in the measurements. Thus a calibration algorithm is
+required to determine initial parameters, which is described in more detail in
+Section\nbsp[[sec:laser-calibration]]. The color of the laser also has an effect,
+discussed in Section\nbsp[[sec:laser-comparison]].
 ** Operation
 *** Overview :ignore:
 This section details how the device would be used in the field.
@@ -448,17 +469,19 @@ document.
 ** Software
 Once the data has been collected, it must be processed to extract the lengths of
 the captured fishes. A summary of the process is as follows: locations of both
-the fish and the laser dot in the image are identified using machine learning
-techniques. The laser's location in 3D space is determined using the location of
+the fish and the laser dot in the image are currently identified manually. We
+are currently developing techniques to do this automatically using machine
+learning. The laser's location in 3D space is determined using the location of
 the laser dot in the image, along with prior knowledge of the laser's location
 with respect to the camera. The fish segmentation mask is used to create a
 polygon of the fish's outline, after which PCA is performed to identify the axis
 of symmetry of the fish. The intersection of this line is used to find the head
 and tail of the fish, and the depth obtained from the laser dot is used to
-determine the locations of the head/tail points in 3D space. The distance
-between these points is what is used to calculate the length of the fish. We
-currently have plans to create a web service that handles all of this
-processing, and intent for citizen scientists to upload their data.
+determine the locations of the head/tail points in 3D space, described in more
+detail in Section\nbsp[[sec:distance-finding]]. The distance between these points is
+what is used to calculate the length of the fish. We currently have plans to
+create a web service that handles all of this processing, and intent for citizen
+scientists to upload their data.
 
 A flowchart of the processing pipeline is included in
 Figure\nbsp\ref{fig:software-flowchart}.
@@ -468,6 +491,62 @@ Figure\nbsp\ref{fig:software-flowchart}.
 #+CAPTION: Flowchart of software processing pipeline.
 #+label: fig:software-flowchart
 [[file:images/software_flowchart.pdf]]
+*** Raw Image Processing
+Anecdotally, we have observed that the camera performs some distortion
+internally, such that the raw images appear to be more distorted than the JPEGs
+that the camera generates. In order to ensure that we have control over all
+aspects of the image processing pipeline, we convert the raw camera images to a
+PNG instead of working with JPEGs processed by the camera.
+
+To convert from raw images to a PNG, we must first apply a debayering algorithm.
+Pixels on an image sensor cannot inherently detect color, and colored filters
+are applied in front of digital camera sensors so that color information can be
+retrieved in post-processing. An illustration of this is included in
+Figure\nbsp\ref{fig:bayer-pattern}.
+
+#+ATTR_LATEX: :scale 0.2
+#+ATTR_ORG: :width 200px
+#+CAPTION: Illustration of the Bayer pattern on a typical digital camera sensor. From Wikimedia Commons\nbsp\cite{BayerPattern}.
+#+label: fig:bayer-pattern
+[[file:images/bayer-pattern.png]]
+
+
+After the image is debayered, we must apply color correction to ensure that the
+fish being photographed are still identifiable. Typically, this requires a known
+"white point", which may change in environments with different lighting.
+
+To circumvent this issue, we use the grey world assumption\nbsp\cite{Buchsbaum1980}.
+This assumes that the color of the image can be adjusted by scaling each color
+by a uniform factor, for which we use the average of each channel, as described
+in the transformation below:
+\begin{equation*}
+(\alpha R, \beta G, \gamma B)  \rightarrow \left(  \frac{  \alpha R  }{  \frac{\alpha}{n}  \sum_i R }, \frac{ \beta G }{  \frac{ \beta }{ n } \sum_i G} , \frac{  \gamma B  }{  \frac{ \gamma }{ n } \sum_i B } \right)
+\end{equation*}
+
+A comparison with this form of color correction on a sample image is displayed
+in Figure\nbsp\ref{}.
+
+*** Finding the Laser Dot
+In order to identify where the laser dot is in the image we usually hand-label
+them. Automatic approaches are still under development. The naive approach of
+simply picking the brightest spot in the image does not always work, as
+sometimes the laser beam may attenuate so much underwater that the laser dot is
+no longer the brightest spot in the image, or perhaps sunlight may reflect off a
+bubble into the camera. Our current attempt relies on a convolutional neural
+network (CNN) that is trained on $28\times28$ tiles within the image. When searching
+for the laser dot within an image, the entire image is broken up into tiles, and
+the tile with the highest probability of being the laser dot is selected. We can
+further constrain the tiles we need to feed into the network by also relying on
+the laser parameters to select a smaller region of the image.
+
+*** Finding Fish Head and Tail Points
+These are also usually hand-labeled, and all data presented within this work is
+hand-labeled. For automatic detection, we currently rely on an open source
+networked called Fishial\nbsp\cite{Fishial2023} to segment the fish. This is a
+MaskRCNN model that both identifies the species of the fish and draws a polygon
+surrounding the fish's outline. Once we identify the outline, we perform
+Principal Component Analysis (PCA) to identify the line along which the location
+of outline points varies the most, which is usually along the body of the fish.
 
 ** Accuracy Bounds
 The primary method that our system aims to improve upon is human-made visual
@@ -478,10 +557,14 @@ et. al., we see that divers can be incorrect about the length of a fish by up to
 20%. As our device is meant to be a supplement for a similar experiment setup,
 we aim to perform as well or even better than this.
 
+** Acknowledgements
+The author would like to acknowledge the work of Christopher Crutchfield,
+Vivaswat Suresh, Ana Perez, Hamish Grant and Kyle Tran for assisting in the
+development of the software processing pipeline.
 ** Conclusion :ignore:
 \\
 Thus far we have described the system setup. The next chapter will describe the
-main contribution of this work -- the algorithms underlying distane estimation
+main contribution of this work -- the algorithms underlying distance estimation
 that utilize the laser.
 * Algorithm Details
 <<sec:algorithms>>
@@ -489,7 +572,7 @@ that utilize the laser.
 The specific contribution detailed in this work are the algorithms relating to
 the laser pointer -- both how the parameters of the laser with respect to the
 camera are determined, and, given those parameters are known, how the location
-of the laser dot can be found in the image.
+of the laser dot can be found in the 3D scene.
 
 ** Pinhole Camera Model
 <<sec:pinhole>>
@@ -521,10 +604,9 @@ this is show in Figure\nbsp\ref{fig:pinhole-general}.
 [[file:images/pinhole-explanation.png]]
 
 Underwater, it is more difficult to make the assumption that imaging systems
-follow the pinhole camera model, especially with our current hardware setup. Our
-camera housing's transparent port separating the camera lens from the water is
-flat, meaning that Snell's law causes incoming light to refract. We have
-described how we get around this issue in Section\nbsp[[sec:backscatter]].
+follow the pinhole camera model, especially with our current hardware setup.
+Without the corrective optic mentioned in Section\nbsp[[sec:backscatter]], the flat port
+of the camera housing causes the incoming light to refract.
 ** Quantities and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to the
 right in the image, the $y$ axis points downward in the image, and the $z$ axis
@@ -583,10 +665,11 @@ Note that our restriction that $\ell$ lies purely in the $xy$ plane means that t
 $z$ component of $\ell$ is always zero.
 
 We also assume that we are able to accurately find the laser dot in the image.
-In practice, these are hand-labeled, but automatic algorithms are outside the
-scope of this document.
+In practice, these are hand-labeled. Automatic algorithms are currently being
+developed, though these are outside the scope of this document.
 
-Figure\nbsp\ref{fig:known-quantities} illustrates all the aforementioned quantities in one place.
+Figure\nbsp\ref{fig:known-quantities} illustrates all the aforementioned quantities
+in one place.
 
 #+ATTR_LATEX: :scale 0.5
 #+ATTR_ORG: :width 200px
@@ -791,13 +874,12 @@ J_{g\ell}^i &= \begin{bmatrix}
 *** Method 2: Averaging
 Once again assuming we have $n$ images with image $i$ corresponding with laser
 dot point $p_i$, a straightforward method to get our laser trajectory $\alpha$ can be
-obtained from a normed average over the differences between all points:
+obtained from a normalized sum over the differences between all points:
 \[
-        \alpha = \frac{1}{n(n-1)}\sum_{i=1}^n\sum_{j\neq i}\frac{p_i - p_j}{\lVert p_i - p_j \rVert}
+        \alpha = \frac{\sum_{i=1}^n\sum_{j > i} p_j - p_i}{\lVert \sum_{i=1}^n\sum_{j > i} p_j - p_i \rVert}
 \]
 
-This can be flipped as necessary to face the direction in which the laser beam
-travels. Once $\alpha$ is obtained, we take the centroid of all of our points, which
+Once $\alpha$ is obtained, we take the centroid of all of our points, which
 we define as $\mu$, and set the intersection of the ray defined by $\mu$ and $\alpha$
 with the $xy$ plane to be $\ell$. Formally, this is defined as
 \[
@@ -1116,7 +1198,7 @@ recreational divers.
 
 *** Salt Water Measurements
 <<sec:fw-vs-sw>>
-
+During the La Jolla deployment, we compared fake fish measurements between
 Much like in our pool tests, the laser was first calibrated, then a fake fish
 was measured and lengths were calculated in post-processing.
 
@@ -1141,8 +1223,8 @@ this can be easily automated. However, we want to assess how effective slate
 calibration is in theory, as it would be a huge asset to people using the device
 in the field. Luckily for us, the divers at REEF were able to test the slate
 calibration with a slate of their own construction. The methodology was as
-follows: each of their seven camera units were calibrated using the same slate,
-and the length of the slate, show in
+follows: each of their seven FishSense Lite units were calibrated using the same
+slate, and the length of the slate, show in
 Figure\nbsp\ref{fig:slate-calibration-measurement}, was measured using the newly
 obtained laser parameters. Several measurements were taken per image to create a
 box and whisker plot, shown in Figure\nbsp\ref{fig:slate-calibration}. We can see
@@ -1391,7 +1473,7 @@ are functions of the wavelength of light $\lambda$.
 \begin{equation}
 c(\lambda) = a(\lambda) + b(\lambda) \label{eq:attenuation}
 \end{equation}
-All of the above quantities are in units of $m^{}^{}^{-1}$, and represent the fraction of
+All of the above quantities are in units of $m^{-1}$, and represent the fraction of
 incident power dissipated per meter.
 
 Figure\nbsp\ref{fig:water-absorption} shows the absorption coefficients of pure
