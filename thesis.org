@@ -384,6 +384,14 @@ parameters, we can then use this to obtain a length of the fish within the
 image. A long-term goal we have is that this data can be mapped to region, a
 specific species and even a specific individual fish, which would allow us to
 create a map of global fish population data.
+** Accuracy Bounds
+The primary method that our system aims to improve upon is human-made visual
+estimates. While humans can collectively estimate the mean length of a
+population quite accurately, the precision with which this is done can vary
+wildly between divers\nbsp\cite{Harvey2002}. Within the study conducted by Harvey
+et. al., we see that divers can be incorrect about the length of a fish by up to
+20%. As our device is meant to be a supplement for a similar experiment setup,
+we aim to perform as well or even better than this.
 ** Hardware Setup
 *** Overview :ignore:
 This is the physical device that divers would use to take measurements. It is
@@ -402,16 +410,25 @@ theoretically any camera would work.
 
 With just the waterproof housing, Snell's law distorts images in such a way that
 a relationship between lengths in the image and lengths in the real world are
-difficult to obtain\nbsp\cite{Agrawal2012}. To mitigate the effects of this, we use
-a corrective optic, which allows us to use a simple camera model described in
-Section\nbsp[[sec:pinhole]]. Developed by Backscatter, this corrective optic is designed
-to attach to the Olympus's underwater housing, and is typically used to widen
-the field of view for underwater photographers. Future work is required for us
+difficult to obtain\nbsp\cite{Agrawal2012}.
+
+To mitigate the effects of this, we use a corrective optic, which allows us to
+use a simple camera model described in Section\nbsp[[sec:pinhole]]. Developed by
+Backscatter, this corrective optic is designed to attach to the Olympus's
+underwater housing, and is typically used to widen the field of view for
+underwater photographers. Figure\nbsp\ref{fig:checkerboard-comparison} shows a
+checkered pattern both with and without this corrective optic installed -- note
+that the distortion without this corrective optic causes lines to be curved,
+which makes it more difficult to measure lengths. Future work is required for us
 to understand how to model these Snell's law distortions better so we can
 ultimately remove it.
 
-In order to justify that we keep the corrective optic on during operation, we
-conducted simulations k
+#+ATTR_LATEX: :scale 0.2
+#+ATTR_ORG: :width 200px
+#+CAPTION: Images of a checkerboard with (left) and without (right) the corrective optic.
+#+label: fig:checkerboard-comparison
+[[file:images/checkerboard-comparison.JPG]]
+
 
 **** Notes :noexport:
 include ana's charts here? that might be sufficient justification
@@ -467,6 +484,7 @@ order to perform this processing, though details are out of scope of this
 document.
 
 ** Software
+*** Preamble :ignore:
 Once the data has been collected, it must be processed to extract the lengths of
 the captured fishes. A summary of the process is as follows: locations of both
 the fish and the laser dot in the image are currently identified manually. We
@@ -524,8 +542,16 @@ in the transformation below:
 \end{equation*}
 
 A comparison with this form of color correction on a sample image is displayed
-in Figure\nbsp\ref{}.
+in Figure\nbsp\ref{fig:jpg-vs-png}.
 
+#+ATTR_LATEX: :scale 0.18
+#+ATTR_ORG: :width 200px
+#+CAPTION: Comparison between camera-processed JPEG image (left) and our processed PNG (right).
+#+label: fig:jpg-vs-png
+[[file:images/jpg-vs-png.JPG]]
+
+Note that within this work, unless stated otherwise, the JPEG images are
+displayed instead of the PNGs, as they are usually better looking.
 *** Finding the Laser Dot
 In order to identify where the laser dot is in the image we usually hand-label
 them. Automatic approaches are still under development. The naive approach of
@@ -547,15 +573,6 @@ MaskRCNN model that both identifies the species of the fish and draws a polygon
 surrounding the fish's outline. Once we identify the outline, we perform
 Principal Component Analysis (PCA) to identify the line along which the location
 of outline points varies the most, which is usually along the body of the fish.
-
-** Accuracy Bounds
-The primary method that our system aims to improve upon is human-made visual
-estimates. While humans can collectively estimate the mean length of a
-population quite accurately, the precision with which this is done can vary
-wildly between divers\nbsp\cite{Harvey2002}. Within the study conducted by Harvey
-et. al., we see that divers can be incorrect about the length of a fish by up to
-20%. As our device is meant to be a supplement for a similar experiment setup,
-we aim to perform as well or even better than this.
 
 ** Acknowledgements
 The author would like to acknowledge the work of Christopher Crutchfield,
@@ -1026,7 +1043,7 @@ distance and the measured distance are well correlated.
 #+ATTR_ORG: :width 200px
 #+CAPTION: Distance estimates compared to a distance reference, measured with two different laser parameter sets.
 #+LABEL: fig:length-reference
-[[file:images/length-reference.png]]
+[[file:images/distance-measurements.pdf]]
 
 Note that this is heavily dependent on the laser calibration being accurate --
 the data in Figure\nbsp\ref{fig:length-reference} follow two different trends, each
@@ -1053,7 +1070,7 @@ of both objects.
 #+ATTR_ORG: :width 200px
 #+CAPTION: Measurements of the fish and the box, plotted over estimated distances away from the camera.
 #+LABEL: fig:measurements
-[[file:images/measurements.png]]
+[[file:images/length-measurements.pdf]]
 
 Based on Equation\nbsp\ref{eq:length-from-depth}, there are several factors that
 cause error here, listed below.
@@ -1213,7 +1230,7 @@ within our accepted error margin of 20%, as we defined earlier.
 #+ATTR_ORG: :width 200px
 #+CAPTION: A freshwater vs saltwater comparison of measured fake fish lengths.
 #+LABEL: fig:freshwater-vs-saltwater
-[[file:images/freshwater-vs-saltwater.png]]
+[[file:images/ocean-test.pdf]]
 
 *** Laser Calibration With A Slate
 <<sec:field-calibration-testing>>
