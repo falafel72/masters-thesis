@@ -16,6 +16,7 @@
 #+LATEX_HEADER: \usepackage{tikz}
 #+LATEX_HEADER: \usepackage{rotating}
 #+LATEX_HEADER: \usepackage{subcaption}
+#+LATEX_HEADER: \usepackage{physics}
 #+LATEX_HEADER: \increasemargins{.1in}
 
 #+LATEX_HEADER: \usepackage[english]{babel}
