@@ -40,14 +40,15 @@ bureaucracies of research funding, and Nikolay Atanasov, for helping me smooth
 out some of the math-heavy portions of this document.
 
 Thank you to Christopher Crutchfield, whose mentorship and companionship has
-been invaluable throughout this process. Thank you to Nathan Hui, whose stern
-engineering and management advice was vital to us making it this far. Thank you
-to all undergraduates who have worked with the FishSense project: Vivaswat
-Suresh, Raghav Maddukuri, Avik Ghosh, Allen Kan, Ana Perez, Hamish Grant, Harish
-Vasanth, Shaurya Raswan, Kyle Tran, Sam Prestrelski, Adrian Zugehar, Claire
-Wang, Jennifer Xu, Louis King, and Grace Liu. Thank you also to the REU students
-who helped us gather valuable data despite unreasonably short notice: Josie
-Dominguez, Jordan Reichhart, Ela Lucas, and Nick Reyes.
+been invaluable to both me personally and to the project overall. Thank you to
+Nathan Hui, whose stern engineering and management advice was vital to us making
+it this far. Thank you to all former and current undergraduates who have worked
+with the FishSense project: Vivaswat Suresh, Raghav Maddukuri, Avik Ghosh, Allen
+Kan, Ana Perez, Hamish Grant, Harish Vasanth, Shaurya Raswan, Kyle Tran, Sam
+Prestrelski, Adrian Zugehar, Claire Wang, Jennifer Xu, Louis King, and Grace
+Liu. Thank you also to the REU students who helped us gather valuable data
+despite unreasonably short notice: Josie Dominguez, Jordan Reichhart, Ela Lucas,
+and Nick Reyes.
 
 Thank you to Professor Brice Semmens, Jack Elstner, Alli Candelmo, Jen Loch and
 the members of REEF for testing this system and providing us with the initial
@@ -88,6 +89,9 @@ Ghosh, Hamish J. Grant, Kyle Tran, Samantha Prestrelski, Ronan Wallace, Nathan
 Hui, Jack Elstner, Dylan Heppell, Jennifer Loch, Alli Candelmo, Brice X.
 Semmens, Curt Schurgers, and Ryan Kastner. The thesis author was one of the
 primary investigators and authors of this material.
+
+I wish the FishSense team the best of luck on the road ahead. Thank you again to
+everyone for accompanying me on this journey.
 
 #+END_acknowledgements
 * Abstract :ignore:
@@ -549,7 +553,7 @@ This assumes that the color of the image can be adjusted by scaling each color
 by a uniform factor, for which we use the average of each channel, as described
 in the transformation below:
 \begin{equation*}
-(\vb{d} R, \beta G, \gamma B)  \rightarrow \left(  \frac{  \vb{d} R  }{  \frac{\vb{d}}{n}  \sum_i R }, \frac{ \beta G }{  \frac{ \beta }{ n } \sum_i G} , \frac{  \gamma B  }{  \frac{ \gamma }{ n } \sum_i B } \right)
+(\alpha R, \beta G, \gamma B)  \rightarrow \left(  \frac{  \alpha R  }{  \frac{\alpha}{n}  \sum_i R }, \frac{ \beta G }{  \frac{ \beta }{ n } \sum_i G} , \frac{  \gamma B  }{  \frac{ \gamma }{ n } \sum_i B } \right)
 \end{equation*}
 
 A comparison with this form of color correction on a sample image is displayed
@@ -571,7 +575,7 @@ simply picking the brightest spot in the image does not always work, as
 sometimes the laser beam may attenuate so much underwater that the laser dot is
 no longer the brightest spot in the image, or perhaps sunlight may reflect off a
 bubble into the camera. Our current attempt relies on a convolutional neural
-network (CNN) that is trained on $28\times28$ tiles within the image. When searching
+network (CNN) that is trained on $20\times20$ tiles within the image. When searching
 for the laser dot within an image, the entire image is broken up into tiles, and
 the tile with the highest probability of being the laser dot is selected.
 
@@ -583,11 +587,13 @@ restricted to a single line in the image.
 *** Finding Fish Head and Tail Points
 These are also usually hand-labeled, and all data presented within this work is
 hand-labeled. For automatic detection, we currently rely on an open source
-networked called Fishial\nbsp\cite{Fishial2023} to segment the fish. This is a
-MaskRCNN model that both identifies the species of the fish and draws a polygon
+network called Fishial\nbsp\cite{Fishial2023} to segment the fish. This is a
+MaskRCNN that both identifies the species of the fish and draws a polygon
 surrounding the fish's outline. Once we identify the outline, we perform
 Principal Component Analysis (PCA) to identify the line along which the location
 of outline points varies the most, which is usually along the body of the fish.
+The intersections of this line with the fish outline are chosen as the head and
+tail points.
 
 ** Acknowledgements
 The author would like to acknowledge the work of Christopher Crutchfield,
@@ -615,13 +621,14 @@ used in stereo cameras for object triangulation.
 
 The pinhole camera model assumes that all light that comes into the camera
 passes through a single point known as the /focal point/, or /optical center/,
-of the camera. These quantities must be calibrated for, and we follow the
-procedure described in Section\nbsp[[sec:camera-calibration]]. All incoming rays fall
-onto the image sensor, which is a plane perpendicular to the camera's axis, at a
-fixed distance from the focal point known as the /focal length/. The image
-projected onto the sensor is a flipped version of the real life scene, as the
-light rays are inverted after passing through the optical center. Instead of
-looking at the image on the image sensor, it is typically the convention to
+of the camera. All incoming rays fall onto the image sensor, which is a plane
+perpendicular to the camera's axis, at a fixed distance from the focal point
+known as the /focal length/. These parameters must be calibrated for, and we
+follow the procedure described in Section\nbsp[[sec:camera-calibration]].
+
+The image projected onto the sensor is a flipped version of the real life scene,
+as the light rays are inverted after passing through the optical center. Instead
+of looking at the image on the image sensor, it is typically the convention to
 mirror the image sensor plane in front of the optical sensor, such that the
 distance from the focal point to this new plane is also the focal length. This
 plane is designated as the /image plane/. This convention allows us to more
@@ -645,11 +652,12 @@ Section\nbsp[[sec:backscatter]], which allows the pinhole camera assumption to h
 ** Quantities and Conventions
 Our axis conventions in this chapter are as follows: the $x$ axis points to the
 right in the image, the $y$ axis points downward in the image, and the $z$ axis
-points forward, away from the camera. This system has the added bonus that the
-$x$ and $y$ axes coincide with the directions of pixel coordinates. The origin
-will be defined at the camera's optical center, where all light rays intersect.
-This coordinate system is commonly known as the ``optical frame'', and any
-mention of 3D coordinates in this work will be within this coordinate system.
+points forward, away from the camera. The $z$ axis is commonly known as the
+/optical axis/ or /camera axis/. This system has the added bonus that the $x$
+and $y$ axes coincide with the directions of pixel coordinates. The origin will
+be defined at the camera's optical center, where all light rays intersect. This
+coordinate system is commonly known as the ``optical frame'', and any mention of
+3D coordinates in this work will be within this coordinate system.
 
 We will make use of the following quantities: $n$ represents the length of the
 fish in pixels, $w$ represents the ``pixel pitch'' (distance between two pixels
@@ -672,7 +680,7 @@ projection onto the image plane.
 [[file:images/pinhole-fish.png]]
 
 If the apparent length of the fish is known, using similar triangles we are able
-to obtain the following relationship:
+to obtain the true length using the following relationship:
 \begin{equation}
 L = \frac{Dnw}{f} \label{eq:length-from-depth}
 \end{equation}
@@ -698,17 +706,23 @@ is always zero.
 
 #+ATTR_LATEX: :scale 0.5
 #+ATTR_ORG: :width 200px
-#+CAPTION: Diagram demonstrating known quantities. Laser shown in solid green, imaged laser dot in dashed green.
+#+CAPTION: Diagram demonstrating known quantities and unknown parameters. Laser shown in solid green, imaged laser dot in dashed green.
 #+label: fig:known-quantities
 [[file:images/known-quantities.png]]
 
 ** Finding the Distance to the Fish
 <<sec:distance-finding>>
 
-We assume that this laser beam intersects the fish at an unknown point $\vb{p}$. As
-imaged by the camera, this laser dot will have known pixel coordinates
-$\mathfrak{p}$. This corresponds to a point $\vb{p}_\text{image}$ on the image plane,
-defined as
+In order to find the distance between the camera and fish, we must assume that
+$\vb{l}$ and $\vb{d}$ are known. How these are obtained is explained in the next
+section.
+
+We assume that this laser beam intersects the fish at an unknown point $\vb{p}$.
+As imaged by the camera, this laser dot will have known pixel coordinates
+$\mathfrak{p}$. Note that the origin of these pixel coordinates is not the top
+left corner of the image, but the center or /principal point/ of the image,
+which is also found during camera calibration. The point $\mathfrak{p}$
+corresponds to a point $\vb{p}_\text{image}$ in the optical frame, defined as
 
 \[
 \vb{p}_\text{image} = \begin{bmatrix}
@@ -782,6 +796,8 @@ form solution:
 \lambda_2 = \frac{-\vb{d}^T\vb{l} \vb{d}^T\vb{v} + \vb{v}^T \vb{l}}{1 - (\vb{d}^T\vb{v})^2}
 \]
 
+A derivation of the above is included in Appendix\nbsp[[sec:scale-factor]].
+
 Obtaining $\lambda_1$ or $\lambda_2$ allows us to obtain $\vb{p}$, and the z-component of $\vb{p}$,
 along with Equation\nbsp\ref{eq:length-from-depth}, gives us the corresponding fish
 length.
@@ -819,7 +835,8 @@ We stack these points into a single vector, defining the following;
 P = \begin{bmatrix} \vb{p}_1 \\ \vb{p}_2 \\ \vdots \\ \vb{p}_k \end{bmatrix}
 \]
 
-We then define a parameter vector $\vb{x}$ that contains all of our parameters:
+We then once again define a parameter vector $\vb{x}$ that contains all of our
+parameters:
 \[
 \vb{x} = \begin{bmatrix}
 \vb{d} \\
@@ -894,8 +911,8 @@ J_{G\vb{l}}^i &= \begin{bmatrix}
 
 *** Method 2: Averaging
 Once again assuming we have $n$ images with image $i$ corresponding with laser
-dot point $\vb{p}_i$, a straightforward method to get our laser trajectory $\vb{d}$ can be
-obtained from a normalized sum over the differences between all points:
+dot point $\vb{p}_i$, our laser trajectory $\vb{d}$ can be obtained from a
+normalized sum over the differences between all points:
 \[
         \vb{d} = \frac{\sum_{i=1}^k\sum_{j > i} \vb{p}_j - \vb{p}_i}{\lVert \sum_{i=1}^n\sum_{j > i} \vb{p}_j - \vb{p}_i \rVert}
 \]
@@ -994,6 +1011,7 @@ The majority of these experiments were performed in a pool setting, as this was
 the most accessible approach for us.
 
 *** Reference Objects
+<<sec:reference-objects>>
 The experiments described in this section involve one of three measurement objects, described below.
 **** Checkerboard
 The checkerboard itself is useful for the same reason that makes it a good
@@ -1050,16 +1068,16 @@ equivalent.
 [[file:images/laser-calibration-comparison.pdf]]
 
 *** Distance Measurements
-<<sec:distance-test>>
-To evaluate purely the distance estimates we can obtain from the system, we take
-images of objects of known length (in this case, a checkerboard square), at known
-distances, and comparing this known distance with the distance we get from the
-algorithm described in Section\nbsp[[sec:distance-finding]]. These data were collected by taking
-pictures at fixed increments -- in our case, we taped 20cm marks to a long
-fishing rod, and took images at each mark. There were originally 19 marks along
-the rod, though many of the pieces of tape came off underwater. Results are
-shown in Figure\nbsp\ref{fig:length-reference}, which demonstrates that the actual
-distance and the measured distance are well correlated.
+<<sec:distance-test>> To evaluate purely the distance estimates we can obtain
+from the system, we take images of objects of known length (in this case, all
+three of the reference objects listed in Section\nbsp[[sec:reference-objects]]), at
+known distances, and comparing this known distance with the distance we get from
+the algorithm described in Section\nbsp[[sec:distance-finding]]. These data were
+collected by taking pictures at fixed increments -- in our case, we taped 20cm
+marks to a long fishing rod, and took images at each mark. There were originally
+19 marks along the rod, though many of the pieces of tape came off underwater.
+Results are shown in Figure\nbsp\ref{fig:length-reference}, which demonstrates that
+the actual distance and the measured distance are well correlated.
 
 #+ATTR_LATEX: :scale 0.8
 #+ATTR_ORG: :width 200px
@@ -1102,9 +1120,10 @@ causes closeup measurements of the object to be shorter than in images taken
 further away, due to the fact that the difference in distance between the laser
 dot and the head/tail points makes up a smaller percentage of the total distance
 as the camera becomes further away. This effect can be seen in
-Figure\nbsp\ref{fig:measurements}, as the fish's trend upward until around
-1m away. It is likely that in field use, there will not be many measurements
-taken that close to the fish anyway, as that would likely scare the fish away.
+Figure\nbsp\ref{fig:measurements}, as the fish's measurements trend upward until
+around 1m away. It is likely that in field use, there will not be many
+measurements taken that close to the fish anyway, as that may scare the fish
+away.
 **** Deviations in Laser Calibration
 Section\nbsp[[sec:distance-test]] showed that an error in the laser calibration
 parameters can cause deviation in measured distance. This creates a deviation in
@@ -1118,8 +1137,8 @@ parameters have on object length measurements.
 #+LABEL: fig:incorrect-laser-calibration
 [[file:images/length-with-incorrect-calibration.png]]
 
-Notably, a change in the laser orientation $\vb{d}$ results in much more error than a
-change in the laser location $l$, so error increases as the laser dot gets
+Notably, a change in the laser orientation $\vb{d}$ results in much more error
+than a change in the laser location $\vb{l}$, especially as the laser dot moves
 further away from the camera.
 
 **** Labelling Errors
@@ -1143,7 +1162,7 @@ given in Section\nbsp[[sec:fw-vs-sw]].
 
 #+ATTR_LATEX: :scale 0.8
 #+ATTR_ORG: :width 200px
-#+CAPTION: A demonstration of data where the laser parameters calculated during calibration do not match the parameters during measurement.
+#+CAPTION: Measurements taken with the same laser parameters, with differing focal lengths.
 #+LABEL: fig:incorrect-camera-calibration
 [[file:images/length-with-incorrect-calibration.pdf]]
 
@@ -1388,7 +1407,8 @@ error margins.
 ** Acknowledgements
 The author would like to thank Nathan Hui and Jack Elstner for testing our
 system off the La Jolla coast. The author would also like to thank Alli
-Candelmo, Jen Loch, and Dylan Heppell for testing our system on behalf of REEF.
+Candelmo, Jen Loch, and Dylan Heppell from REEF for testing our system
+extensively in the Florida Keys.
 * Conclusion
 <<sec:conclusion>>
 ** Summary
@@ -1428,7 +1448,73 @@ specific populations of a certain species or even specific individuals.
 
 #+LATEX: \appendix
 
-* Derivation of Jacobian
+* Supplementary Derivations
+** Derivation of Scale Factor
+<<sec:scale-factor>>
+
+Recall from Section\nbsp[[sec:distance-finding]] that we have
+\begin{equation*}
+A\vb{x} = -\vb{l},
+\end{equation*}
+where we define the following matrices:
+\begin{align*}
+A &= \begin{bmatrix}
+        d_x & -v_x \\
+        d_y & -v_y \\
+        d_z & -v_z \\
+    \end{bmatrix}\\
+   \vb{x} &= \begin{bmatrix}
+        \lambda_1 \\ \lambda_2
+   \end{bmatrix}
+\end{align*}
+
+By multiplying $A^T$ on the left and right hand sides, we get
+\[
+A^TA\vb{x} = -A^T\vb{l}.
+\]
+
+We also note the following:
+\begin{align*}
+A^TA &= \begin{bmatrix}
+\lVert \vb{d}\rVert_2^2 & -\vb{d}^T\vb{v}\\
+-\vb{d}^T\vb{v} & \lVert \vb{v}\rVert_2^2 \\
+\end{bmatrix} \\
+-A^T\vb{l} &= \begin{bmatrix}
+-\vb{d}^T\vb{l} \\
+-\vb{v}^T\vb{l}
+\end{bmatrix}
+\end{align*}
+
+Since this is a system of two linear equations, we can leverage standard row
+reduction methods to solve for $\lambda_2$. First we create an augmented matrix:
+\begin{equation*}
+\left[
+\begin{array}{cc|c}
+    \lVert \vb{d} \rVert_2^2 & -\vb{d}^T \vb{v} & -\vb{d}^T\vb{l}\\
+    -\vb{d}^T \vb{v} & \lVert\vb{v}\rVert^2_2 & -\vb{v}^T\vb{l}
+\end{array}
+\right]
+\end{equation*}
+
+Then we apply row reduction:
+\begin{equation*}
+\left[
+    \begin{array}{cc|c}
+    \lVert\vb{d}\rVert_2^2 & -\vb{d}^T v & -\vb{d}^T \vb{l}\\
+    0 & 1 & \Big(-\vb{d}^T\vb{l} + \frac{\vb{v}^T\vb{l} \lVert\vb{d}\rVert_2^2}{\vb{d}^T\vb{v}} \Big)\frac{1}{\Big( \frac{\lVert\vb{v}\rVert_2^2 \lVert\vb{d}\rVert_2^2}{\vb{d}^T\vb{v}} - \vb{d}^T\vb{v} \Big)}
+    \end{array}
+\right]
+\end{equation*}
+The above provides the solution to $\lambda_2$:
+\[
+\lambda_2 = \frac{-\vb{d}^T\vb{l} \vb{d}^T\vb{v} + \vb{v}^T\vb{l} \lVert\vb{d}\rVert_2^2}{\lVert\vb{v}\rVert_2^2\lVert\vb{d}\rVert_2^2 - \vb{d}^T\vb{v} \vb{d}^T \vb{v}}
+\]
+Since both $\vb{v}$ and $\vb{d}$ are both unit vectors, we then get
+\[
+\lambda_2 = \frac{-\vb{d}^T\vb{l}\vb{d}^T\vb{v} + \vb{v}^T\vb{l}}{1 - (\vb{d}^T\vb{v})^2}.
+\]
+
+** Derivation Of Jacobian
 <<sec:jacobian-derivation>>
 Recall the function $G(\vb{x})$:
 \begin{equation*}
