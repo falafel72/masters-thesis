@@ -1,5 +1,6 @@
 #+OPTIONS: toc:nil H:5
 #+SETUPFILE: setup.org
+
 #+TITLE: Methods for In-Situ Fish Length Measurement with a Single Laser and Camera to Support Citizen Science
 #+AUTHOR: Kyle Sirong Hu
 #+LATEX_HEADER: \degree{Electrical Engineering (Intelligent Systems, Robotics and Control)}{Master of Science}
@@ -7,9 +8,9 @@
 #+LATEX_HEADER: \chair{Professor Curt Schurgers}
 #+LATEX_HEADER: \cochair{Professor Ryan Kastner}
 #+LATEX_HEADER: \committee{Professor Nikolay Atanasov}
+#+LATEX_HEADER: \frontmatter
 
 * Frontmatter :ignore:
-#+LATEX: \frontmatter
 #+LATEX: \makecopyright
 #+LATEX: \makesignature
 #+BEGIN_dedication
@@ -83,7 +84,7 @@ Game communities, for teaching me how to take a loss.
 Finally, thank you to my parents, whose continuous support has allowed the
 opportunity to do all of this.
 
-Chapters 2, 3 and 4 contain material that is being prepared for submission.
+Chapters 2, 3 and 4 contain material that is being prepared for publication.
 Christopher L. Crutchfield, Kyle S. Hu, Vivaswat Suresh, Ana I. Perez, Avik
 Ghosh, Hamish J. Grant, Kyle Tran, Samantha Prestrelski, Ronan Wallace, Nathan
 Hui, Jack Elstner, Dylan Heppell, Jennifer Loch, Alli Candelmo, Brice X.
@@ -595,15 +596,21 @@ of outline points varies the most, which is usually along the body of the fish.
 The intersections of this line with the fish outline are chosen as the head and
 tail points.
 
+Thus far we have described the system setup. The next chapter will describe the
+main contribution of this work -- the algorithms underlying distance estimation
+that utilize the laser.
+
 ** Acknowledgements
 The author would like to acknowledge the work of Christopher Crutchfield,
 Vivaswat Suresh, Ana Perez, Hamish Grant and Kyle Tran for assisting in the
 development of the software processing pipeline.
-** Conclusion :ignore:
-\\
-Thus far we have described the system setup. The next chapter will describe the
-main contribution of this work -- the algorithms underlying distance estimation
-that utilize the laser.
+
+This chapter contains material that is being prepared for publication. Christopher L.
+Crutchfield, Kyle S. Hu, Vivaswat Suresh, Ana I. Perez, Avik Ghosh, Hamish J.
+Grant, Kyle Tran, Samantha Prestrelski, Ronan Wallace, Nathan Hui, Jack Elstner,
+Dylan Heppell, Jennifer Loch, Alli Candelmo, Brice X. Semmens, Curt Schurgers,
+and Ryan Kastner. The thesis author was one of the primary investigators and
+authors of this material.
 * Algorithm Details
 <<sec:algorithms>>
 ** Preamble :ignore:
@@ -987,8 +994,15 @@ to obtain the length of a fish. In the next chapter, we will discuss
 experiements done to test the device.
 ** Acknowledgements
 The author would like to thank Christopher Crutchfield, Nathan Hui and Nikolay
-Atanasov for assistance with the math in this chapter. The author was the
-primary investigator of this material.
+Atanasov for assistance with the math in this chapter.
+
+This chapter contains material that is being prepared for publication.
+Christopher L. Crutchfield, Kyle S. Hu, Vivaswat Suresh, Ana I. Perez, Avik
+Ghosh, Hamish J. Grant, Kyle Tran, Samantha Prestrelski, Ronan Wallace, Nathan
+Hui, Jack Elstner, Dylan Heppell, Jennifer Loch, Alli Candelmo, Brice X.
+Semmens, Curt Schurgers, and Ryan Kastner. The thesis author was one of the
+primary investigators and authors of this material.
+
 * Experiments
 <<sec:testing>>
 In this section we describe the testing that we have done so far to quantify how
@@ -1409,6 +1423,13 @@ The author would like to thank Nathan Hui and Jack Elstner for testing our
 system off the La Jolla coast. The author would also like to thank Alli
 Candelmo, Jen Loch, and Dylan Heppell from REEF for testing our system
 extensively in the Florida Keys.
+
+This chapter contains material that is being prepared for publication.
+Christopher L. Crutchfield, Kyle S. Hu, Vivaswat Suresh, Ana I. Perez, Avik
+Ghosh, Hamish J. Grant, Kyle Tran, Samantha Prestrelski, Ronan Wallace, Nathan
+Hui, Jack Elstner, Dylan Heppell, Jennifer Loch, Alli Candelmo, Brice X.
+Semmens, Curt Schurgers, and Ryan Kastner. The thesis author was one of the
+primary investigators and authors of this material.
 * Conclusion
 <<sec:conclusion>>
 ** Summary
@@ -1695,10 +1716,6 @@ For a detailed guide on the optical properties of water and how they are
 studied, the Ocean Optics Web Book\footnote{https://www.oceanopticsbook.info/}
 is a great resource.
 
-*** Notes :noexport:
-- define attenuation in terms of absorption and scattering? maybe even mention inherent optical properties?
--
-
-* Backmatter                                                         :ignore:
+* Backmatter :ignore:
 \bibliographystyle{plain}
 \bibliography{fishsense}
